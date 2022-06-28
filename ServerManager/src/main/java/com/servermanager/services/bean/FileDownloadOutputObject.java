@@ -27,6 +27,9 @@ public class FileDownloadOutputObject<T> extends TransferObject<T> {
 	@Override
 	public TransferObject apply(TransferObject<T> object) {
 		if (object == null) {
+			if (from.exists() && from.length() == 0L) {
+				return new FileUploadInputObject<Object>(to, new byte[]{}).setDeadPill(true);
+			}
 			try {
 				inputStream = new FileInputStream(from);
 				iterator = FileUtils.getFileUploadInputObjectIterator(to, inputStream);

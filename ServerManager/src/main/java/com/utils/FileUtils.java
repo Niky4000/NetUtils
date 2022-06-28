@@ -9,7 +9,8 @@ import java.lang.management.ManagementFactory;
 import java.nio.file.Files;
 import java.nio.file.OpenOption;
 import java.nio.file.Path;
-import java.nio.file.StandardOpenOption;
+import static java.nio.file.StandardOpenOption.APPEND;
+import static java.nio.file.StandardOpenOption.CREATE_NEW;
 import java.security.MessageDigest;
 import java.util.Arrays;
 import java.util.Iterator;
@@ -27,20 +28,24 @@ public class FileUtils {
 				OpenOption openOption;
 				if (file.exists()) {
 					if (delete) {
-						openOption = StandardOpenOption.CREATE_NEW;
+						openOption = CREATE_NEW;
 						file.delete();
 					} else {
-						openOption = StandardOpenOption.APPEND;
+						openOption = APPEND;
 					}
 				} else {
-					openOption = StandardOpenOption.CREATE_NEW;
+					openOption = CREATE_NEW;
 				}
 				if (file.getParentFile() != null && !file.getParentFile().exists()) {
 					file.getParentFile().mkdirs();
 				}
 				if (bytes != null) {
 					Files.write(file.toPath(), bytes, openOption);
+				} else if (bytes == null && openOption.equals(CREATE_NEW)) {
+					file.createNewFile();
 				}
+			} else if (deadPill && bytes != null && bytes.length == 0 && !file.exists()) {
+				file.createNewFile();
 			}
 		} catch (Exception e) {
 			throw new RuntimeException(e);

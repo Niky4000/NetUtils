@@ -23,6 +23,8 @@ import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
+import static com.servermanager.services.ObservableFileSystemService.createFileSystemListerner;
+import static com.servermanager.services.ObservableFileSystemService.initActionsBeforeCreatingTheListerners;
 
 public class StartServerManager {
 
@@ -131,6 +133,13 @@ public class StartServerManager {
 						String host = getParameter("-host", argList);
 						Integer port = Integer.valueOf(getParameter("-port", argList));
 						new ClusterService(host, port).listFilesClient();
+					} else if (argList.get(0).equals("WATCH")) {
+						File dir = new File(getParameter("-dir", argList));
+						String host = getParameter("-host", argList);
+						Integer port = Integer.valueOf(getParameter("-port", argList));
+						Path to = Paths.get(getParameter("-to", argList));
+						initActionsBeforeCreatingTheListerners(host, port, to, dir);
+						createFileSystemListerner(host, port, to, dir);
 					} else if (argList.get(0).equals("DEBUG")) {
 						debug();
 						WaitUtils.waitSomeTime(2000);
