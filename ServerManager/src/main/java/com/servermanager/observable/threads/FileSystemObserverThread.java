@@ -1,5 +1,7 @@
 package com.servermanager.observable.threads;
 
+import static com.servermanager.StartServerManager.getHandledEvents;
+import com.servermanager.services.events.FileEventKey;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.FileSystems;
@@ -52,6 +54,9 @@ public class FileSystemObserverThread extends Thread implements InterruptableThr
 							File modifiedFile = new File(dir.getAbsolutePath() + s + file.getName());
 							watchThread.addModifiedFileSet(modifiedFile);
 							logger.debug("file = " + modifiedFile.getAbsolutePath() + " size = " + (modifiedFile.exists() ? modifiedFile.length() : 0) + "!");
+							if (getHandledEvents().asMap().containsKey(new FileEventKey(modifiedFile.getAbsolutePath()))) {
+								continue;
+							}
 							System.out.println("file = " + modifiedFile.getAbsolutePath() + " size = " + (modifiedFile.exists() ? modifiedFile.length() : 0) + "!");
 							modificationCounter.incrementAndGet();
 							watchThread.interrupt();

@@ -1,6 +1,8 @@
 package com.servermanager.services;
 
 import com.github.benmanes.caffeine.cache.Caffeine;
+import com.servermanager.StartServerManager;
+import static com.servermanager.StartServerManager.getHandledEvents;
 import static com.servermanager.caches.CacheNames.EVENTS;
 import static com.servermanager.services.FilesClusterService.EVENT_TIME_TO_LIVE;
 import com.servermanager.services.events.Event;
@@ -29,7 +31,6 @@ public class EventClusterService {
 	private final Integer clientPort;
 	private final Integer clientPortRange;
 	private final File home;
-	final com.github.benmanes.caffeine.cache.Cache<FileEventKey, Event> handledEvents = Caffeine.<FileEventKey, Event>newBuilder().expireAfterWrite(EVENT_TIME_TO_LIVE, TimeUnit.MINUTES).build();
 
 	public EventClusterService(String host, Integer port, String instanceName, Integer clientPort, Integer clientPortRange, File home) {
 		this.host = host;
@@ -53,7 +54,7 @@ public class EventClusterService {
 				Cache.Entry<FileEventKey, Event> next = iterator.next();
 				FileEventKey key = next.getKey();
 				FileEvent fileEvent = (FileEvent) next.getValue();
-				if (handledEvents.asMap().containsKey(key)) {
+				if (getHandledEvents().asMap().containsKey(key)) {
 					continue;
 				}
 				if (fileEvent instanceof FileUploaded) {
@@ -67,7 +68,7 @@ public class EventClusterService {
 					home.toPath().resolve(fileEvent.getFile().getName()).toFile().delete();
 					System.out.println("File event: " + fileEvent.getFile().getAbsolutePath() + " was deleted!");
 				}
-				handledEvents.put(key, fileEvent);
+				getHandledEvents().put(key, fileEvent);
 			}
 			try {
 				Thread.sleep(10 * 1000);
