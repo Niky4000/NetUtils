@@ -97,10 +97,10 @@ public class FilesClusterService extends AbstractService {
 	}
 
 	public void fileUploadedEvent(File file) {
-		ignite.cache(EVENTS.value()).put(new Date(), new FileUploaded(file));
+		ignite.<FileEventKey, Event>cache(EVENTS.value()).put(new FileEventKey(new Date(), file.getName()), new FileUploaded(file));
 	}
 
 	public void fileDeletedEvent(File file) {
-		ignite.cache(EVENTS.value()).put(new Date(), new FileDeleted(file));
+		ignite.<FileEventKey, Event>cache(EVENTS.value()).put(new FileEventKey(new Date(), file.getName()), new FileDeleted(file));
 	}
 }
