@@ -1,13 +1,17 @@
 package com.servermanager.services;
 
+import com.github.benmanes.caffeine.cache.Caffeine;
 import static com.servermanager.caches.CacheNames.EVENTS;
+import static com.servermanager.services.FilesClusterService.EVENT_TIME_TO_LIVE;
 import com.servermanager.services.events.Event;
 import com.servermanager.services.events.FileDeleted;
 import com.servermanager.services.events.FileEvent;
+import com.servermanager.services.events.FileEventKey;
 import com.servermanager.services.events.FileUploaded;
 import java.io.File;
 import java.util.Date;
 import java.util.Iterator;
+import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.cache.Cache;
@@ -25,6 +29,7 @@ public class EventClusterService {
 	private final Integer clientPort;
 	private final Integer clientPortRange;
 	private final File home;
+	final com.github.benmanes.caffeine.cache.Cache<FileEventKey, Event> handledEvents = Caffeine.<FileEventKey, Event>newBuilder().expireAfterWrite(EVENT_TIME_TO_LIVE, TimeUnit.MINUTES).build();
 
 	public EventClusterService(String host, Integer port, String instanceName, Integer clientPort, Integer clientPortRange, File home) {
 		this.host = host;
@@ -42,12 +47,15 @@ public class EventClusterService {
 
 	public void listenToFileEvents() {
 		while (true) {
-			ignite.<Date, Event>cache(EVENTS.value());
-			Iterator<Cache.Entry<Date, Event>> iterator = ignite.<Date, Event>cache(EVENTS.value()).query(new ScanQuery<Date, Event>((date, event) -> event instanceof FileEvent)).iterator();
+			ignite.<FileEventKey, Event>cache(EVENTS.value());
+			Iterator<Cache.Entry<FileEventKey, Event>> iterator = ignite.<FileEventKey, Event>cache(EVENTS.value()).query(new ScanQuery<FileEventKey, Event>((date, event) -> event instanceof FileEvent)).iterator();
 			while (iterator.hasNext()) {
-				Cache.Entry<Date, Event> next = iterator.next();
-				Date date = next.getKey();
+				Cache.Entry<FileEventKey, Event> next = iterator.next();
+				FileEventKey key = next.getKey();
 				FileEvent fileEvent = (FileEvent) next.getValue();
+				if (handledEvents.asMap().containsKey(key)) {
+					continue;
+				}
 				if (fileEvent instanceof FileUploaded) {
 					try {
 						new DownloadService(host, port).download(fileEvent.getFile().toPath(), home.toPath().resolve(fileEvent.getFile().getName()));
@@ -59,6 +67,7 @@ public class EventClusterService {
 					home.toPath().resolve(fileEvent.getFile().getName()).toFile().delete();
 					System.out.println("File event: " + fileEvent.getFile().getAbsolutePath() + " was deleted!");
 				}
+				handledEvents.put(key, fileEvent);
 			}
 			try {
 				Thread.sleep(10 * 1000);

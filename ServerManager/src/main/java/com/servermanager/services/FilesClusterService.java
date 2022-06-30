@@ -4,6 +4,7 @@ import static com.servermanager.caches.CacheNames.EVENTS;
 import com.servermanager.services.bean.ClusterListFilesBean;
 import com.servermanager.services.events.Event;
 import com.servermanager.services.events.FileDeleted;
+import com.servermanager.services.events.FileEventKey;
 import com.servermanager.services.events.FileUploaded;
 import com.utils.CacheUtils;
 import com.utils.IgniteUtils;
@@ -29,6 +30,7 @@ import org.apache.ignite.configuration.CacheConfiguration;
 
 public class FilesClusterService extends AbstractService {
 
+	public static final int EVENT_TIME_TO_LIVE = 2;
 	private Ignite ignite;
 	private Collection<String> hostList;
 	private String instanceName;
@@ -58,9 +60,9 @@ public class FilesClusterService extends AbstractService {
 	public void startCluster() {
 		this.ignite = IgniteUtils.createServerInstance(new ArrayList<>(hostList), instanceName, initialLocalPort, endPort, localPort, clientPort, clientPortRange);
 		CacheUtils.destroyCacheIfItExists(ignite, EVENTS.value());
-		CacheConfiguration<Date, Event> cacheConfiguration = new CacheConfiguration<>();
+		CacheConfiguration<FileEventKey, Event> cacheConfiguration = new CacheConfiguration<>();
 		cacheConfiguration.setName(EVENTS.value());
-		cacheConfiguration.setExpiryPolicyFactory(CreatedExpiryPolicy.factoryOf(new Duration(TimeUnit.MINUTES, 2)));
+		cacheConfiguration.setExpiryPolicyFactory(CreatedExpiryPolicy.factoryOf(new Duration(TimeUnit.MINUTES, EVENT_TIME_TO_LIVE)));
 		cacheConfiguration.setEagerTtl(true);
 		cacheConfiguration.setOnheapCacheEnabled(true);
 		ignite.getOrCreateCache(cacheConfiguration);
