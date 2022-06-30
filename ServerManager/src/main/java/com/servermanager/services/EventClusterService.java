@@ -10,6 +10,7 @@ import com.servermanager.services.events.FileEventKey;
 import com.servermanager.services.events.FileUploaded;
 import java.io.File;
 import java.util.Iterator;
+import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -52,7 +53,9 @@ public class EventClusterService {
 				Cache.Entry<FileEventKey, Event> next = iterator.next();
 				FileEventKey key = next.getKey();
 				FileEvent fileEvent = (FileEvent) next.getValue();
-				if (getHandledEvents().asMap().containsKey(key)) {
+				if (Optional.ofNullable(getHandledEvents().asMap().get(key)).map(value -> {
+					return value.getDate().before(fileEvent.getDate()) || value.getDate().equals(fileEvent.getDate());
+				}).orElse(false)) {
 					continue;
 				}
 				if (fileEvent instanceof FileUploaded) {

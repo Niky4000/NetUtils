@@ -1,7 +1,9 @@
 package com.servermanager.services;
 
+import static com.servermanager.StartServerManager.getEventClusterServiceMap;
 import com.servermanager.observable.threads.FileSystemObserverThread;
 import com.servermanager.observable.threads.WatchThread;
+import com.servermanager.services.events.FileEventKey;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Path;
@@ -10,6 +12,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
@@ -63,6 +66,9 @@ public class ObservableFileSystemService {
 		WatchThread watchThread = new WatchThread(threadIndex, modifiedFileSet -> {
 			for (File file : modifiedFileSet) {
 				try {
+					if (Optional.ofNullable(getEventClusterServiceMap().get(dir)).map(eventService -> eventService.getHandledEvents()).map(cache -> cache.asMap().containsKey(new FileEventKey(file.getName()))).orElse(false)) {
+						continue;
+					}
 					if (file.exists()) {
 						new UploadService(host, port).upload(to.resolve(file.getName()), file.toPath());
 						System.out.println("File " + file.getAbsolutePath() + " was sent!");

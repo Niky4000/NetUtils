@@ -1,6 +1,7 @@
 package com.servermanager.services.events;
 
 import java.io.Serializable;
+import java.util.Date;
 import java.util.Objects;
 
 public class FileEventKey implements Serializable {

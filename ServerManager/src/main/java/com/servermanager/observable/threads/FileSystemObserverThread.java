@@ -55,9 +55,6 @@ public class FileSystemObserverThread extends Thread implements InterruptableThr
 							File modifiedFile = new File(dir.getAbsolutePath() + s + file.getName());
 							watchThread.addModifiedFileSet(modifiedFile);
 							logger.debug("file = " + modifiedFile.getAbsolutePath() + " size = " + (modifiedFile.exists() ? modifiedFile.length() : 0) + "!");
-							if (Optional.ofNullable(getEventClusterServiceMap().get(dir)).map(eventService -> eventService.getHandledEvents()).map(cache -> cache.asMap().containsKey(new FileEventKey(modifiedFile.getName()))).orElse(false)) {
-								continue;
-							}
 							System.out.println("file = " + modifiedFile.getAbsolutePath() + " size = " + (modifiedFile.exists() ? modifiedFile.length() : 0) + "!");
 							modificationCounter.incrementAndGet();
 							watchThread.interrupt();
