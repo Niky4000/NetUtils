@@ -1,7 +1,7 @@
 package com.servermanager.services.bean;
 
 import com.servermanager.StartServerManager;
-import com.servermanager.services.ClusterService;
+import com.servermanager.services.FilesClusterService;
 import java.io.File;
 import java.util.List;
 import java.util.Map;
@@ -19,7 +19,7 @@ public class ClusterListFilesBean<T> extends TransferObject<T> {
 
 	@Override
 	public TransferObject apply(TransferObject<T> object) {
-		ClusterService clusterService = StartServerManager.getClusterService();
+		FilesClusterService clusterService = StartServerManager.getClusterService();
 		if (clusterService != null) {
 			Map<String, List<File>> listFiles = clusterService.listFiles();
 			return new ClusterListFilesBean(listFiles);

@@ -45,7 +45,8 @@ public class WatchThread extends Thread implements InterruptableThread {
 				}
 				modificationCounter.set(0);
 				try {
-					consumer.accept(new HashSet<>(getModifiedFileSet()));
+					consumer.accept(getModifiedFileSet());
+					clearModifiedFileSet();
 				} catch (Exception e) {
 					e.printStackTrace();
 				}
@@ -54,11 +55,15 @@ public class WatchThread extends Thread implements InterruptableThread {
 	}
 
 	public synchronized Set<File> getModifiedFileSet() {
-		return modifiedFileSet;
+		return new HashSet<>(modifiedFileSet);
 	}
 
 	public synchronized void addModifiedFileSet(File modifiedFile) {
 		this.modifiedFileSet.add(modifiedFile);
+	}
+
+	private synchronized void clearModifiedFileSet() {
+		this.modifiedFileSet.clear();
 	}
 
 	private void waitSomeTime() {

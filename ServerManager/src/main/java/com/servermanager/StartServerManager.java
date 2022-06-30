@@ -3,9 +3,10 @@ package com.servermanager;
 import com.lib.ConfigHandler;
 import static com.lib.ConfigHandler.getParameter;
 import static com.lib.ConfigHandler.getParameters;
-import com.servermanager.services.ClusterService;
+import com.servermanager.services.FilesClusterService;
 import com.servermanager.services.DeleteService;
 import com.servermanager.services.DownloadService;
+import com.servermanager.services.EventClusterService;
 import com.servermanager.services.SelfUpdateService;
 import com.servermanager.services.ServerListerner;
 import com.servermanager.services.UpdateService;
@@ -25,12 +26,13 @@ import java.util.List;
 import java.util.Map;
 import static com.servermanager.services.ObservableFileSystemService.createFileSystemListerner;
 import static com.servermanager.services.ObservableFileSystemService.initActionsBeforeCreatingTheListerners;
+import java.util.Optional;
 
 public class StartServerManager {
 
 	private static final String SAVE_FOLDER_NAME = "dat";
 	private static final String CRYPTED_CONFIG = "sys.dat";
-	private static ClusterService clusterService;
+	private static FilesClusterService clusterService;
 
 	public static void main(String[] args) throws Exception {
 //		Toolkit.getDefaultToolkit().getSystemClipboard().addFlavorListener(new FlavorListener() {
@@ -88,7 +90,9 @@ public class StartServerManager {
 						Integer initialLocalPort = Integer.valueOf(getParameter("-port", argList));
 						Integer endPort = Integer.valueOf(getParameter("-endPort", argList));
 						Integer localPort = Integer.valueOf(getParameter("-localPort", argList));
-						clusterService = new ClusterService(hostMap.values(), instanceName, initialLocalPort, endPort, localPort, home);
+						Integer clientPort = Optional.ofNullable(getParameter("-clientPort", argList)).map(Integer::valueOf).orElse(null);
+						Integer clientPortRange = Optional.ofNullable(getParameter("-clientPortRange", argList)).map(Integer::valueOf).orElse(null);
+						clusterService = new FilesClusterService(hostMap.values(), instanceName, initialLocalPort, endPort, localPort, home, clientPort, clientPortRange);
 						clusterService.startCluster();
 					} else if (argList.get(0).equals("UPDATE")) {
 						String host = getParameter("-host", argList);
@@ -132,7 +136,7 @@ public class StartServerManager {
 					} else if (argList.get(0).equals("C_LIST_FILES")) {
 						String host = getParameter("-host", argList);
 						Integer port = Integer.valueOf(getParameter("-port", argList));
-						new ClusterService(host, port).listFilesClient();
+						new FilesClusterService(host, port).listFilesClient();
 					} else if (argList.get(0).equals("WATCH")) {
 						File dir = new File(getParameter("-dir", argList));
 						String host = getParameter("-host", argList);
@@ -140,6 +144,16 @@ public class StartServerManager {
 						Path to = Paths.get(getParameter("-to", argList));
 						initActionsBeforeCreatingTheListerners(host, port, to, dir);
 						createFileSystemListerner(host, port, to, dir);
+					} else if (argList.get(0).equals("EVENT")) {
+						String host = getParameter("-host", argList);
+						Integer port = Integer.valueOf(getParameter("-port", argList));
+						File home = new File(getParameter("-dir", argList));
+						String instanceName = getParameter("-instanceName", argList);
+						Integer clientPort = Optional.ofNullable(getParameter("-clientPort", argList)).map(Integer::valueOf).orElse(null);
+						Integer clientPortRange = Optional.ofNullable(getParameter("-portRange", argList)).map(Integer::valueOf).orElse(null);
+						EventClusterService eventService = new EventClusterService(host, port, instanceName, clientPort, clientPortRange, home);
+						eventService.startCluster();
+						eventService.listenToFileEvents();
 					} else if (argList.get(0).equals("DEBUG")) {
 						debug();
 						WaitUtils.waitSomeTime(2000);
@@ -168,7 +182,7 @@ public class StartServerManager {
 		Files.write(file.toPath(), (new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new Date()) + "\n").getBytes(), StandardOpenOption.TRUNCATE_EXISTING);
 	}
 
-	public static ClusterService getClusterService() {
+	public static FilesClusterService getClusterService() {
 		return clusterService;
 	}
 }

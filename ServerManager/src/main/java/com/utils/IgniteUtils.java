@@ -5,6 +5,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.Ignition;
+import org.apache.ignite.configuration.ClientConnectorConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
@@ -12,10 +13,10 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 
 public class IgniteUtils {
 
-	public static Ignite createServerInstance(List<String> ipList, String instanceName, int initialLocalPort, int endPort, int localPort) {
+	public static Ignite createServerInstance(List<String> ipList, String instanceName, int initialLocalPort, int endPort, int localPort, Integer clientPort, Integer clientPortRange) {
 		List<String> ipRangeList = ipList.stream().map(ip -> ip + ":" + initialLocalPort + ".." + endPort).collect(Collectors.toList());
-		IgniteConfiguration firstCfg = new IgniteConfiguration();
-		firstCfg.setIgniteInstanceName(instanceName);
+		IgniteConfiguration configuration = new IgniteConfiguration();
+		configuration.setIgniteInstanceName(instanceName);
 		// Explicitly configure TCP discovery SPI to provide list of initial nodes
 		// from the first cluster.
 		TcpDiscoverySpi firstDiscoverySpi = new TcpDiscoverySpi();
@@ -35,11 +36,19 @@ public class IgniteUtils {
 		TcpCommunicationSpi firstCommSpi = new TcpCommunicationSpi();
 		firstCommSpi.setLocalPort(localPort);
 		// Overriding discovery SPI.
-		firstCfg.setDiscoverySpi(firstDiscoverySpi);
+		configuration.setDiscoverySpi(firstDiscoverySpi);
 		// Overriding communication SPI.
-		firstCfg.setCommunicationSpi(firstCommSpi);
+		configuration.setCommunicationSpi(firstCommSpi);
+		if (clientPort != null) {
+			ClientConnectorConfiguration clientConnectorConfiguration = new ClientConnectorConfiguration();
+			clientConnectorConfiguration.setPort(clientPort);
+			if (clientPortRange != null) {
+				clientConnectorConfiguration.setPortRange(clientPortRange);
+			}
+			configuration.setClientConnectorConfiguration(clientConnectorConfiguration);
+		}
 		// Starting a node.
-		Ignite ignite = Ignition.start(firstCfg);
+		Ignite ignite = Ignition.start(configuration);
 		return ignite;
 	}
 }

@@ -1,6 +1,11 @@
 package com.servermanager.services;
 
+import static com.servermanager.caches.CacheNames.EVENTS;
+import static com.servermanager.caches.CacheNames.FILES;
 import com.servermanager.services.bean.ClusterListFilesBean;
+import com.servermanager.services.events.FileDeleted;
+import com.servermanager.services.events.FileUploaded;
+import com.utils.CacheUtils;
 import com.utils.IgniteUtils;
 import com.utils.MapBuilder;
 import java.io.File;
@@ -9,15 +14,20 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Optional;
 import java.util.TreeMap;
+import java.util.concurrent.TimeUnit;
+import javax.cache.expiry.CreatedExpiryPolicy;
+import javax.cache.expiry.Duration;
 import org.apache.ignite.Ignite;
+import org.apache.ignite.configuration.CacheConfiguration;
 
-public class ClusterService extends AbstractService {
+public class FilesClusterService extends AbstractService {
 
 	private Ignite ignite;
 	private Collection<String> hostList;
@@ -26,12 +36,14 @@ public class ClusterService extends AbstractService {
 	private int endPort;
 	private int localPort;
 	private File home;
+	private Integer clientPort;
+	private Integer clientPortRange;
 
-	public ClusterService(String host, int port) {
+	public FilesClusterService(String host, int port) {
 		super(host, port);
 	}
 
-	public ClusterService(Collection<String> hostList, String instanceName, int initialLocalPort, int endPort, int localPort, File home) {
+	public FilesClusterService(Collection<String> hostList, String instanceName, int initialLocalPort, int endPort, int localPort, File home, Integer clientPort, Integer clientPortRange) {
 		super(null, 0);
 		this.hostList = hostList;
 		this.instanceName = instanceName;
@@ -39,10 +51,19 @@ public class ClusterService extends AbstractService {
 		this.endPort = endPort;
 		this.localPort = localPort;
 		this.home = home;
+		this.clientPort = clientPort;
+		this.clientPortRange = clientPortRange;
 	}
 
 	public void startCluster() {
-		this.ignite = IgniteUtils.createServerInstance(new ArrayList<>(hostList), instanceName, initialLocalPort, endPort, localPort);
+		this.ignite = IgniteUtils.createServerInstance(new ArrayList<>(hostList), instanceName, initialLocalPort, endPort, localPort, clientPort, clientPortRange);
+		CacheUtils.destroyCacheIfItExists(ignite, FILES.value());
+		CacheConfiguration<String, File> cacheConfiguration = new CacheConfiguration<String, File>();
+		cacheConfiguration.setName(FILES.value());
+		cacheConfiguration.setExpiryPolicyFactory(CreatedExpiryPolicy.factoryOf(new Duration(TimeUnit.MINUTES, 2)));
+		cacheConfiguration.setEagerTtl(true);
+		cacheConfiguration.setOnheapCacheEnabled(true);
+		ignite.getOrCreateCache(cacheConfiguration);
 	}
 
 	public Map<String, List<File>> listFiles() {
@@ -71,5 +92,13 @@ public class ClusterService extends AbstractService {
 				}
 			}
 		});
+	}
+
+	public void fileUploadedEvent(File file) {
+		ignite.cache(EVENTS.value()).put(new Date(), new FileUploaded(file));
+	}
+
+	public void fileDeletedEvent(File file) {
+		ignite.cache(EVENTS.value()).put(new Date(), new FileDeleted(file));
 	}
 }

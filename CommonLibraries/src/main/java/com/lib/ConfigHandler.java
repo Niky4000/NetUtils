@@ -125,7 +125,7 @@ public class ConfigHandler {
 	}
 
 	public static String getParameter(String param, List<String> argList) {
-		return argList.get(argList.indexOf(param) + 1);
+		return argList.contains(param) ? argList.get(argList.indexOf(param) + 1) : null;
 	}
 
 	public static Map<String, String> getParameters(String param, List<String> argList) {

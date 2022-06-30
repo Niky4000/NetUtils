@@ -1,5 +1,6 @@
 package com.servermanager.services.bean;
 
+import com.servermanager.StartServerManager;
 import java.io.File;
 
 public class FileDeleteInputObject<T> extends TransferObject<T> {
@@ -15,6 +16,7 @@ public class FileDeleteInputObject<T> extends TransferObject<T> {
 		file.delete();
 		if (file.getParentFile().listFiles().length == 0) {
 			file.getParentFile().delete();
+			StartServerManager.getClusterService().fileDeletedEvent(file);
 		}
 		return new TransferObject();
 	}

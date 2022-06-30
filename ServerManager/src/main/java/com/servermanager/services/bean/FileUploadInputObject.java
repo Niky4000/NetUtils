@@ -1,5 +1,6 @@
 package com.servermanager.services.bean;
 
+import com.servermanager.StartServerManager;
 import static com.utils.FileUtils.handleFile;
 import java.io.File;
 
@@ -30,9 +31,15 @@ public class FileUploadInputObject<T> extends TransferObject<T> {
 		this.deadPill = false;
 	}
 
+	public File getFile() {
+		return file;
+	}
+
 	@Override
 	public TransferObject apply(TransferObject<T> object) {
-		handleFile(file, bytes, delete, deadPill);
+		handleFile(file, bytes, delete, deadPill, file_ -> {
+			StartServerManager.getClusterService().fileUploadedEvent(((FileUploadInputObject) object).getFile());
+		});
 		return new TransferObject();
 	}
 }

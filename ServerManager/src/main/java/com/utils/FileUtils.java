@@ -16,13 +16,14 @@ import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.Consumer;
 import java.util.stream.Stream;
 
 public class FileUtils {
 
 	public static final int buffer_size = 1024 * 1024;
 
-	public static void handleFile(File file, byte[] bytes, boolean delete, boolean deadPill) throws RuntimeException {
+	public static void handleFile(File file, byte[] bytes, boolean delete, boolean deadPill, Consumer<File> fileUploaded) throws RuntimeException {
 		try {
 			if (!deadPill) {
 				OpenOption openOption;
@@ -46,6 +47,9 @@ public class FileUtils {
 				}
 			} else if (deadPill && bytes != null && bytes.length == 0 && !file.exists()) {
 				file.createNewFile();
+				fileUploaded.accept(file);
+			} else {
+				fileUploaded.accept(file);
 			}
 		} catch (Exception e) {
 			throw new RuntimeException(e);
