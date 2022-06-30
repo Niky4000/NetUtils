@@ -16,7 +16,11 @@ public class FileDeleteInputObject<T> extends TransferObject<T> {
 		file.delete();
 		if (file.getParentFile().listFiles().length == 0) {
 			file.getParentFile().delete();
-			StartServerManager.getClusterService().fileDeletedEvent(file);
+			try {
+				StartServerManager.getClusterService().fileDeletedEvent(file);
+			} catch (Exception e) {
+				e.printStackTrace();
+			}
 		}
 		return new TransferObject();
 	}

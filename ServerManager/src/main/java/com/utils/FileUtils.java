@@ -25,7 +25,7 @@ public class FileUtils {
 
 	public static void handleFile(File file, byte[] bytes, boolean delete, boolean deadPill, Consumer<File> fileUploaded) throws RuntimeException {
 		try {
-			if (!deadPill) {
+			if (!deadPill && file != null && !file.isDirectory()) {
 				OpenOption openOption;
 				if (file.exists()) {
 					if (delete) {
@@ -45,7 +45,7 @@ public class FileUtils {
 				} else if (bytes == null && openOption.equals(CREATE_NEW)) {
 					file.createNewFile();
 				}
-			} else if (deadPill && bytes != null && bytes.length == 0 && !file.exists()) {
+			} else if (deadPill && bytes != null && bytes.length == 0 && file != null && !file.exists()) {
 				file.createNewFile();
 				fileUploaded.accept(file);
 			} else {

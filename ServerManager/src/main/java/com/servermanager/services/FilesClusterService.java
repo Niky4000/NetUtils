@@ -1,8 +1,8 @@
 package com.servermanager.services;
 
 import static com.servermanager.caches.CacheNames.EVENTS;
-import static com.servermanager.caches.CacheNames.FILES;
 import com.servermanager.services.bean.ClusterListFilesBean;
+import com.servermanager.services.events.Event;
 import com.servermanager.services.events.FileDeleted;
 import com.servermanager.services.events.FileUploaded;
 import com.utils.CacheUtils;
@@ -57,9 +57,9 @@ public class FilesClusterService extends AbstractService {
 
 	public void startCluster() {
 		this.ignite = IgniteUtils.createServerInstance(new ArrayList<>(hostList), instanceName, initialLocalPort, endPort, localPort, clientPort, clientPortRange);
-		CacheUtils.destroyCacheIfItExists(ignite, FILES.value());
-		CacheConfiguration<String, File> cacheConfiguration = new CacheConfiguration<String, File>();
-		cacheConfiguration.setName(FILES.value());
+		CacheUtils.destroyCacheIfItExists(ignite, EVENTS.value());
+		CacheConfiguration<Date, Event> cacheConfiguration = new CacheConfiguration<>();
+		cacheConfiguration.setName(EVENTS.value());
 		cacheConfiguration.setExpiryPolicyFactory(CreatedExpiryPolicy.factoryOf(new Duration(TimeUnit.MINUTES, 2)));
 		cacheConfiguration.setEagerTtl(true);
 		cacheConfiguration.setOnheapCacheEnabled(true);

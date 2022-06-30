@@ -38,7 +38,11 @@ public class FileUploadInputObject<T> extends TransferObject<T> {
 	@Override
 	public TransferObject apply(TransferObject<T> object) {
 		handleFile(file, bytes, delete, deadPill, file_ -> {
-			StartServerManager.getClusterService().fileUploadedEvent(((FileUploadInputObject) object).getFile());
+			try {
+				StartServerManager.getClusterService().fileUploadedEvent(((FileUploadInputObject) object).getFile());
+			} catch (Exception e) {
+				e.printStackTrace();
+			}
 		});
 		return new TransferObject();
 	}
