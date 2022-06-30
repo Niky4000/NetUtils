@@ -48,11 +48,12 @@ public class EventClusterService {
 
 	public void listenToFileEvents() {
 		while (true) {
-//			ignite.<FileEventKey, Event>cache(EVENTS.value());
-//			Iterator<Cache.Entry<FileEventKey, Event>> iterator = ignite.<FileEventKey, Event>cache(EVENTS.value()).query(new ScanQuery<FileEventKey, Event>((date, event) -> event instanceof FileEvent)).iterator();
 			try {
-				Iterator<Cache.Entry<FileEventKey, Event>> iterator = ignite.<FileEventKey, Event>cache(EVENTS.value()).query(new ScanQuery<FileEventKey, Event>()).iterator();
+				int eventCounter = 0;
+				Iterator<Cache.Entry<FileEventKey, Event>> iterator = ignite.<FileEventKey, Event>cache(EVENTS.value()).query(new ScanQuery<FileEventKey, Event>((date, event) -> event instanceof FileEvent)).iterator();
+//				Iterator<Cache.Entry<FileEventKey, Event>> iterator = ignite.<FileEventKey, Event>cache(EVENTS.value()).query(new ScanQuery<FileEventKey, Event>()).iterator();
 				while (iterator.hasNext()) {
+					eventCounter++;
 					Cache.Entry<FileEventKey, Event> next = iterator.next();
 					FileEventKey key = next.getKey();
 					FileEvent fileEvent = (FileEvent) next.getValue();
@@ -68,17 +69,22 @@ public class EventClusterService {
 					}
 					if (fileEvent instanceof FileUploaded) {
 						try {
+							getHandledEvents().put(key, fileEvent);
 							new DownloadService(host, port).download(fileEvent.getFile().toPath(), home.toPath().resolve(fileEvent.getFile().getName()));
 							System.out.println("File event: " + fileEvent.getFile().getAbsolutePath() + " was downloaded!");
 						} catch (Exception e) {
 							e.printStackTrace();
 						}
 					} else if (fileEvent instanceof FileDeleted) {
+						getHandledEvents().put(key, fileEvent);
 						home.toPath().resolve(fileEvent.getFile().getName()).toFile().delete();
 						System.out.println("File event: " + fileEvent.getFile().getAbsolutePath() + " was deleted!");
 					}
-					getHandledEvents().put(key, fileEvent);
 				}
+				if (eventCounter == 0) {
+					System.out.println("No events happened!");
+				}
+				eventCounter = 0;
 				try {
 					Thread.sleep(10 * 1000);
 				} catch (InterruptedException ex) {
