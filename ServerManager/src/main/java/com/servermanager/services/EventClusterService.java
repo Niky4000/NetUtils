@@ -54,7 +54,7 @@ public class EventClusterService {
 				FileEventKey key = next.getKey();
 				FileEvent fileEvent = (FileEvent) next.getValue();
 				if (Optional.ofNullable(getHandledEvents().asMap().get(key)).map(Event::getDate).map(date -> {
-					return date.before(fileEvent.getDate()) || date.equals(fileEvent.getDate());
+					return date.equals(fileEvent.getDate());
 				}).orElse(false)) {
 					continue;
 				}
