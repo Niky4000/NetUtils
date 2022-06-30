@@ -9,6 +9,7 @@ import com.servermanager.services.events.FileEvent;
 import com.servermanager.services.events.FileEventKey;
 import com.servermanager.services.events.FileUploaded;
 import java.io.File;
+import java.util.Date;
 import java.util.Iterator;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
@@ -47,34 +48,44 @@ public class EventClusterService {
 
 	public void listenToFileEvents() {
 		while (true) {
-			ignite.<FileEventKey, Event>cache(EVENTS.value());
-			Iterator<Cache.Entry<FileEventKey, Event>> iterator = ignite.<FileEventKey, Event>cache(EVENTS.value()).query(new ScanQuery<FileEventKey, Event>((date, event) -> event instanceof FileEvent)).iterator();
-			while (iterator.hasNext()) {
-				Cache.Entry<FileEventKey, Event> next = iterator.next();
-				FileEventKey key = next.getKey();
-				FileEvent fileEvent = (FileEvent) next.getValue();
-				if (Optional.ofNullable(getHandledEvents().asMap().get(key)).map(Event::getDate).map(date -> {
-					return date.equals(fileEvent.getDate());
-				}).orElse(false)) {
-					continue;
-				}
-				if (fileEvent instanceof FileUploaded) {
-					try {
-						new DownloadService(host, port).download(fileEvent.getFile().toPath(), home.toPath().resolve(fileEvent.getFile().getName()));
-						System.out.println("File event: " + fileEvent.getFile().getAbsolutePath() + " was downloaded!");
-					} catch (Exception e) {
-						e.printStackTrace();
-					}
-				} else if (fileEvent instanceof FileDeleted) {
-					home.toPath().resolve(fileEvent.getFile().getName()).toFile().delete();
-					System.out.println("File event: " + fileEvent.getFile().getAbsolutePath() + " was deleted!");
-				}
-				getHandledEvents().put(key, fileEvent);
-			}
+//			ignite.<FileEventKey, Event>cache(EVENTS.value());
+//			Iterator<Cache.Entry<FileEventKey, Event>> iterator = ignite.<FileEventKey, Event>cache(EVENTS.value()).query(new ScanQuery<FileEventKey, Event>((date, event) -> event instanceof FileEvent)).iterator();
 			try {
-				Thread.sleep(10 * 1000);
-			} catch (InterruptedException ex) {
-				Logger.getLogger(EventClusterService.class.getName()).log(Level.SEVERE, null, ex);
+				Iterator<Cache.Entry<FileEventKey, Event>> iterator = ignite.<FileEventKey, Event>cache(EVENTS.value()).query(new ScanQuery<FileEventKey, Event>()).iterator();
+				while (iterator.hasNext()) {
+					Cache.Entry<FileEventKey, Event> next = iterator.next();
+					FileEventKey key = next.getKey();
+					FileEvent fileEvent = (FileEvent) next.getValue();
+					if (Optional.ofNullable(getHandledEvents().asMap().get(key)).map(Event::getDate).map(date -> {
+						Date fileEventDate = fileEvent.getDate();
+						boolean b = date.equals(fileEventDate);
+						if (!b) {
+							System.out.println("File: " + key.getName() + " eventDate: " + fileEventDate + "!");
+						}
+						return b;
+					}).orElse(false)) {
+						continue;
+					}
+					if (fileEvent instanceof FileUploaded) {
+						try {
+							new DownloadService(host, port).download(fileEvent.getFile().toPath(), home.toPath().resolve(fileEvent.getFile().getName()));
+							System.out.println("File event: " + fileEvent.getFile().getAbsolutePath() + " was downloaded!");
+						} catch (Exception e) {
+							e.printStackTrace();
+						}
+					} else if (fileEvent instanceof FileDeleted) {
+						home.toPath().resolve(fileEvent.getFile().getName()).toFile().delete();
+						System.out.println("File event: " + fileEvent.getFile().getAbsolutePath() + " was deleted!");
+					}
+					getHandledEvents().put(key, fileEvent);
+				}
+				try {
+					Thread.sleep(10 * 1000);
+				} catch (InterruptedException ex) {
+					Logger.getLogger(EventClusterService.class.getName()).log(Level.SEVERE, null, ex);
+				}
+			} catch (Exception e) {
+				e.printStackTrace();
 			}
 		}
 	}

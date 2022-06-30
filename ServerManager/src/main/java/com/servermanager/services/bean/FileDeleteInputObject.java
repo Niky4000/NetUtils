@@ -14,13 +14,13 @@ public class FileDeleteInputObject<T> extends TransferObject<T> {
 	@Override
 	public TransferObject apply(TransferObject<T> object) {
 		file.delete();
+		try {
+			StartServerManager.getClusterService().fileDeletedEvent(file);
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
 		if (file.getParentFile().listFiles().length == 0) {
 			file.getParentFile().delete();
-			try {
-				StartServerManager.getClusterService().fileDeletedEvent(file);
-			} catch (Exception e) {
-				e.printStackTrace();
-			}
 		}
 		return new TransferObject();
 	}
