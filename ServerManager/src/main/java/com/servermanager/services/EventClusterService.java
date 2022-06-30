@@ -85,14 +85,19 @@ public class EventClusterService {
 					System.out.println("No events happened!");
 				}
 				eventCounter = 0;
-				try {
-					Thread.sleep(10 * 1000);
-				} catch (InterruptedException ex) {
-					Logger.getLogger(EventClusterService.class.getName()).log(Level.SEVERE, null, ex);
-				}
+				wait10Seconds();
 			} catch (Exception e) {
 				e.printStackTrace();
+				wait10Seconds();
 			}
+		}
+	}
+
+	private void wait10Seconds() {
+		try {
+			Thread.sleep(10 * 1000);
+		} catch (InterruptedException ex) {
+			Logger.getLogger(EventClusterService.class.getName()).log(Level.SEVERE, null, ex);
 		}
 	}
 
