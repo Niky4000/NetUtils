@@ -1,8 +1,6 @@
 package com.servermanager.services;
 
 import com.github.benmanes.caffeine.cache.Caffeine;
-import com.servermanager.StartServerManager;
-import static com.servermanager.StartServerManager.getHandledEvents;
 import static com.servermanager.caches.CacheNames.EVENTS;
 import static com.servermanager.services.FilesClusterService.EVENT_TIME_TO_LIVE;
 import com.servermanager.services.events.Event;
@@ -11,7 +9,6 @@ import com.servermanager.services.events.FileEvent;
 import com.servermanager.services.events.FileEventKey;
 import com.servermanager.services.events.FileUploaded;
 import java.io.File;
-import java.util.Date;
 import java.util.Iterator;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
@@ -31,6 +28,7 @@ public class EventClusterService {
 	private final Integer clientPort;
 	private final Integer clientPortRange;
 	private final File home;
+	private final com.github.benmanes.caffeine.cache.Cache<FileEventKey, Event> handledEvents = Caffeine.<FileEventKey, Event>newBuilder().expireAfterWrite(EVENT_TIME_TO_LIVE, TimeUnit.MINUTES).build();
 
 	public EventClusterService(String host, Integer port, String instanceName, Integer clientPort, Integer clientPortRange, File home) {
 		this.host = host;
@@ -76,10 +74,9 @@ public class EventClusterService {
 				Logger.getLogger(EventClusterService.class.getName()).log(Level.SEVERE, null, ex);
 			}
 		}
-//		IgniteEvents events = ignite.events();
-//		events.remoteListen((uuid, event) -> {
-//			System.out.println("Event name = " + event.name() + "!");
-//			return true;
-//		}, event -> true, EventType.EVT_CACHE_OBJECT_PUT);
+	}
+
+	public com.github.benmanes.caffeine.cache.Cache<FileEventKey, Event> getHandledEvents() {
+		return handledEvents;
 	}
 }

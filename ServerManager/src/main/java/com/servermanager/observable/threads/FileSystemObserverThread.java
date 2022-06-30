@@ -1,6 +1,6 @@
 package com.servermanager.observable.threads;
 
-import static com.servermanager.StartServerManager.getHandledEvents;
+import static com.servermanager.StartServerManager.getEventClusterServiceMap;
 import com.servermanager.services.events.FileEventKey;
 import java.io.File;
 import java.io.IOException;
@@ -13,6 +13,7 @@ import static java.nio.file.StandardWatchEventKinds.OVERFLOW;
 import java.nio.file.WatchEvent;
 import java.nio.file.WatchKey;
 import java.nio.file.WatchService;
+import java.util.Optional;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -54,7 +55,7 @@ public class FileSystemObserverThread extends Thread implements InterruptableThr
 							File modifiedFile = new File(dir.getAbsolutePath() + s + file.getName());
 							watchThread.addModifiedFileSet(modifiedFile);
 							logger.debug("file = " + modifiedFile.getAbsolutePath() + " size = " + (modifiedFile.exists() ? modifiedFile.length() : 0) + "!");
-							if (getHandledEvents().asMap().containsKey(new FileEventKey(modifiedFile.getAbsolutePath()))) {
+							if (Optional.ofNullable(getEventClusterServiceMap().get(dir)).map(eventService -> eventService.getHandledEvents()).map(cache -> cache.asMap().containsKey(new FileEventKey(modifiedFile.getName()))).orElse(false)) {
 								continue;
 							}
 							System.out.println("file = " + modifiedFile.getAbsolutePath() + " size = " + (modifiedFile.exists() ? modifiedFile.length() : 0) + "!");

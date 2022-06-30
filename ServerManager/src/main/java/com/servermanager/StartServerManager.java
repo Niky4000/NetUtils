@@ -1,7 +1,5 @@
 package com.servermanager;
 
-import com.github.benmanes.caffeine.cache.Cache;
-import com.github.benmanes.caffeine.cache.Caffeine;
 import com.lib.ConfigHandler;
 import static com.lib.ConfigHandler.getParameter;
 import static com.lib.ConfigHandler.getParameters;
@@ -9,7 +7,6 @@ import com.servermanager.services.FilesClusterService;
 import com.servermanager.services.DeleteService;
 import com.servermanager.services.DownloadService;
 import com.servermanager.services.EventClusterService;
-import static com.servermanager.services.FilesClusterService.EVENT_TIME_TO_LIVE;
 import com.servermanager.services.SelfUpdateService;
 import com.servermanager.services.ServerListerner;
 import com.servermanager.services.UpdateService;
@@ -29,17 +26,16 @@ import java.util.List;
 import java.util.Map;
 import static com.servermanager.services.ObservableFileSystemService.createFileSystemListerner;
 import static com.servermanager.services.ObservableFileSystemService.initActionsBeforeCreatingTheListerners;
-import com.servermanager.services.events.Event;
-import com.servermanager.services.events.FileEventKey;
 import java.util.Optional;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 
 public class StartServerManager {
 
 	private static final String SAVE_FOLDER_NAME = "dat";
 	private static final String CRYPTED_CONFIG = "sys.dat";
 	private static FilesClusterService clusterService;
-	private static final com.github.benmanes.caffeine.cache.Cache<FileEventKey, Event> handledEvents = Caffeine.<FileEventKey, Event>newBuilder().expireAfterWrite(EVENT_TIME_TO_LIVE, TimeUnit.MINUTES).build();
+	private static ConcurrentMap<File, EventClusterService> eventClusterServiceMap = new ConcurrentHashMap<>();
 
 	public static void main(String[] args) throws Exception {
 //		Toolkit.getDefaultToolkit().getSystemClipboard().addFlavorListener(new FlavorListener() {
@@ -159,6 +155,7 @@ public class StartServerManager {
 						Integer clientPort = Optional.ofNullable(getParameter("-clientPort", argList)).map(Integer::valueOf).orElse(null);
 						Integer clientPortRange = Optional.ofNullable(getParameter("-portRange", argList)).map(Integer::valueOf).orElse(null);
 						EventClusterService eventService = new EventClusterService(host, port, instanceName, clientPort, clientPortRange, home);
+						getEventClusterServiceMap().put(home, eventService);
 						eventService.startCluster();
 						eventService.listenToFileEvents();
 					} else if (argList.get(0).equals("DEBUG")) {
@@ -193,7 +190,7 @@ public class StartServerManager {
 		return clusterService;
 	}
 
-	public static Cache<FileEventKey, Event> getHandledEvents() {
-		return handledEvents;
+	public static ConcurrentMap<File, EventClusterService> getEventClusterServiceMap() {
+		return eventClusterServiceMap;
 	}
 }
