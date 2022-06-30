@@ -53,8 +53,8 @@ public class EventClusterService {
 				Cache.Entry<FileEventKey, Event> next = iterator.next();
 				FileEventKey key = next.getKey();
 				FileEvent fileEvent = (FileEvent) next.getValue();
-				if (Optional.ofNullable(getHandledEvents().asMap().get(key)).map(value -> {
-					return value.getDate().before(fileEvent.getDate()) || value.getDate().equals(fileEvent.getDate());
+				if (Optional.ofNullable(getHandledEvents().asMap().get(key)).map(Event::getDate).map(date -> {
+					return date.before(fileEvent.getDate()) || date.equals(fileEvent.getDate());
 				}).orElse(false)) {
 					continue;
 				}
