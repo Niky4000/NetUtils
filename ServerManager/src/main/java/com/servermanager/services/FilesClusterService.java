@@ -26,6 +26,7 @@ import java.util.concurrent.TimeUnit;
 import javax.cache.expiry.CreatedExpiryPolicy;
 import javax.cache.expiry.Duration;
 import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteCache;
 import org.apache.ignite.configuration.CacheConfiguration;
 
 public class FilesClusterService extends AbstractService {
@@ -97,10 +98,16 @@ public class FilesClusterService extends AbstractService {
 	}
 
 	public void fileUploadedEvent(File file) {
-		ignite.<FileEventKey, Event>cache(EVENTS.value()).put(new FileEventKey(file.getName()), new FileUploaded(file));
+//		ignite.<FileEventKey, Event>cache(EVENTS.value()).put(new FileEventKey(file.getName()), new FileUploaded(file));
+		IgniteCache<FileEventKey, Event> cache = ignite.<FileEventKey, Event>cache(EVENTS.value());
+		cache.remove(new FileEventKey(file.getName()));
+		cache.put(new FileEventKey(file.getName()), new FileUploaded(file));
 	}
 
 	public void fileDeletedEvent(File file) {
-		ignite.<FileEventKey, Event>cache(EVENTS.value()).put(new FileEventKey(file.getName()), new FileDeleted(file));
+//		ignite.<FileEventKey, Event>cache(EVENTS.value()).put(new FileEventKey(file.getName()), new FileDeleted(file));
+		IgniteCache<FileEventKey, Event> cache = ignite.<FileEventKey, Event>cache(EVENTS.value());
+		cache.remove(new FileEventKey(file.getName()));
+		cache.put(new FileEventKey(file.getName()), new FileDeleted(file));
 	}
 }
