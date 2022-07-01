@@ -8,7 +8,7 @@ public class FileEvent extends Event {
 	private final File file;
 
 	public FileEvent(File file, Date date) {
-		super();
+		super(date);
 		this.file = file;
 	}
 
