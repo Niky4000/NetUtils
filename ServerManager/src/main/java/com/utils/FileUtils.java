@@ -9,10 +9,13 @@ import java.lang.management.ManagementFactory;
 import java.nio.file.Files;
 import java.nio.file.OpenOption;
 import java.nio.file.Path;
+
 import static java.nio.file.StandardOpenOption.APPEND;
 import static java.nio.file.StandardOpenOption.CREATE_NEW;
+
 import java.security.MessageDigest;
 import java.util.Arrays;
+import java.util.Date;
 import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -56,7 +59,7 @@ public class FileUtils {
 		}
 	}
 
-	public static Iterator<FileUploadInputObject> getFileUploadInputObjectIterator(File file, FileInputStream inputStream) {
+	public static Iterator<FileUploadInputObject> getFileUploadInputObjectIterator(File file, FileInputStream inputStream, Date eventDate) {
 		AtomicBoolean finished = new AtomicBoolean(false);
 		Iterator<FileUploadInputObject> iterator = new Iterator<FileUploadInputObject>() {
 			@Override
@@ -75,12 +78,12 @@ public class FileUtils {
 						if (read < buffer_size) {
 							byte[] buffer2 = new byte[read];
 							System.arraycopy(buffer, 0, buffer2, 0, read);
-							return new FileUploadInputObject<Object>(file, buffer2);
+							return new FileUploadInputObject<Object>(file, buffer2, eventDate);
 						} else {
-							return new FileUploadInputObject<Object>(file, buffer);
+							return new FileUploadInputObject<Object>(file, buffer, eventDate);
 						}
 					}
-					return new FileUploadInputObject<>();
+					return new FileUploadInputObject<>(eventDate);
 				} catch (Exception e) {
 					throw new RuntimeException(e);
 				}

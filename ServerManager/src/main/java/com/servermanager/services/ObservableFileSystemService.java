@@ -1,13 +1,17 @@
 package com.servermanager.services;
 
 import static com.servermanager.StartServerManager.getEventClusterServiceMap;
+
 import com.servermanager.observable.threads.FileSystemObserverThread;
 import com.servermanager.observable.threads.WatchThread;
+import com.servermanager.services.events.FileDeleted;
 import com.servermanager.services.events.FileEventKey;
+import com.servermanager.services.events.FileUploaded;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.Arrays;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -37,13 +41,13 @@ public class ObservableFileSystemService {
 		if (!remoteFileMapWithoutLocalFiles.isEmpty()) {
 			DownloadService downloadService = new DownloadService(host, port);
 			for (File file : remoteFileMapWithoutLocalFiles.values()) {
-				downloadService.download(file.toPath(), dir.toPath().resolve(file.getName()));
+				downloadService.download(file.toPath(), dir.toPath().resolve(file.getName()), new Date());
 			}
 		}
 		if (!localFileMapWithoutRemoteFiles.isEmpty()) {
 			UploadService uploadService = new UploadService(host, port);
 			for (File file : localFileMapWithoutRemoteFiles.values()) {
-				uploadService.upload(to.resolve(file.getName()), file.toPath());
+				uploadService.upload(to.resolve(file.getName()), file.toPath(), new Date());
 			}
 		}
 	}
@@ -69,11 +73,14 @@ public class ObservableFileSystemService {
 					if (Optional.ofNullable(getEventClusterServiceMap().get(dir)).map(eventService -> eventService.getHandledEvents()).map(cache -> cache.asMap().containsKey(new FileEventKey(file.getName()))).orElse(false)) {
 						continue;
 					}
+					Date eventDate = new Date();
 					if (file.exists()) {
-						new UploadService(host, port).upload(to.resolve(file.getName()), file.toPath());
+						getEventClusterServiceMap().get(dir).getHandledEvents().put(new FileEventKey(file.getName()), new FileUploaded(file, eventDate));
+						new UploadService(host, port).upload(to.resolve(file.getName()), file.toPath(), eventDate);
 						System.out.println("File " + file.getAbsolutePath() + " was sent!");
 					} else {
-						new DeleteService(host, port).delete(to.resolve(file.getName()));
+						getEventClusterServiceMap().get(dir).getHandledEvents().put(new FileEventKey(file.getName()), new FileDeleted(file, eventDate));
+						new DeleteService(host, port).delete(to.resolve(file.getName()), eventDate);
 						System.out.println("File " + file.getAbsolutePath() + " was deleted!");
 					}
 				} catch (Exception e) {

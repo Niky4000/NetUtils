@@ -61,7 +61,7 @@ public class EventClusterService {
 						Date fileEventDate = fileEvent.getDate();
 						boolean b = date.equals(fileEventDate);
 						if (!b) {
-							System.out.println("File: " + key.getName() + " eventDate: " + fileEventDate + "!");
+							System.out.println("File: " + key.getName() + " date: " + date + " eventDate: " + fileEventDate + "!");
 						}
 						return b;
 					}).orElse(false)) {
@@ -70,7 +70,7 @@ public class EventClusterService {
 					if (fileEvent instanceof FileUploaded) {
 						try {
 							getHandledEvents().put(key, fileEvent);
-							new DownloadService(host, port).download(fileEvent.getFile().toPath(), home.toPath().resolve(fileEvent.getFile().getName()));
+							new DownloadService(host, port).download(fileEvent.getFile().toPath(), home.toPath().resolve(fileEvent.getFile().getName()), new Date());
 							System.out.println("File event: " + fileEvent.getFile().getAbsolutePath() + " was downloaded!");
 						} catch (Exception e) {
 							e.printStackTrace();

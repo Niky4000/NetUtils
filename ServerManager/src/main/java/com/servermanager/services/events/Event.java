@@ -11,6 +11,10 @@ public class Event implements Serializable {
 		this.date = new Date();
 	}
 
+	public Event(Date date) {
+		this.date = date;
+	}
+
 	public Date getDate() {
 		return date;
 	}

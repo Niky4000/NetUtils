@@ -106,7 +106,7 @@ public class StartServerManager {
 						Integer port = Integer.valueOf(getParameter("-port", argList));
 						Path to = Paths.get(getParameter("-to", argList));
 						Path from = Paths.get(getParameter("-from", argList));
-						new UploadService(host, port).upload(to, from);
+						new UploadService(host, port).upload(to, from, new Date());
 					} else if (argList.get(0).equals("SELF_UPDATE")) {
 						new SelfUpdateService().update(args);
 					} else if (argList.get(0).equals("DOWNLOAD")) {
@@ -114,12 +114,12 @@ public class StartServerManager {
 						Integer port = Integer.valueOf(getParameter("-port", argList));
 						Path from = Paths.get(getParameter("-from", argList));
 						Path to = Paths.get(getParameter("-to", argList));
-						new DownloadService(host, port).download(from, to);
+						new DownloadService(host, port).download(from, to, new Date());
 					} else if (argList.get(0).equals("DELETE")) {
 						String host = getParameter("-host", argList);
 						Integer port = Integer.valueOf(getParameter("-port", argList));
 						Path to = Paths.get(getParameter("-to", argList));
-						new DeleteService(host, port).delete(to);
+						new DeleteService(host, port).delete(to, new Date());
 					} else if (argList.get(0).equals("UPDATE_SSH")) {
 						String host = getParameter("-host", argList);
 						String user = getParameter("-user", argList);

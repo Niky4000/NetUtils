@@ -1,6 +1,7 @@
 package com.servermanager.services;
 
 import static com.servermanager.caches.CacheNames.EVENTS;
+
 import com.servermanager.services.bean.ClusterListFilesBean;
 import com.servermanager.services.events.Event;
 import com.servermanager.services.events.FileDeleted;
@@ -97,17 +98,17 @@ public class FilesClusterService extends AbstractService {
 		});
 	}
 
-	public void fileUploadedEvent(File file) {
+	public void fileUploadedEvent(File file, Date eventDate) {
 //		ignite.<FileEventKey, Event>cache(EVENTS.value()).put(new FileEventKey(file.getName()), new FileUploaded(file));
 		IgniteCache<FileEventKey, Event> cache = ignite.<FileEventKey, Event>cache(EVENTS.value());
 		cache.remove(new FileEventKey(file.getName()));
-		cache.put(new FileEventKey(file.getName()), new FileUploaded(file));
+		cache.put(new FileEventKey(file.getName()), new FileUploaded(file, eventDate));
 	}
 
-	public void fileDeletedEvent(File file) {
+	public void fileDeletedEvent(File file, Date eventDate) {
 //		ignite.<FileEventKey, Event>cache(EVENTS.value()).put(new FileEventKey(file.getName()), new FileDeleted(file));
 		IgniteCache<FileEventKey, Event> cache = ignite.<FileEventKey, Event>cache(EVENTS.value());
 		cache.remove(new FileEventKey(file.getName()));
-		cache.put(new FileEventKey(file.getName()), new FileDeleted(file));
+		cache.put(new FileEventKey(file.getName()), new FileDeleted(file, eventDate));
 	}
 }
