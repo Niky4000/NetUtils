@@ -10,11 +10,11 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.Socket;
 import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CopyOnWriteArraySet;
 import java.util.function.Supplier;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -59,12 +59,12 @@ public class NetUtils {
 	}
 
 	public static Map<Integer, Set<String>> parceFilters(List<String> argList) {
-		Map<Integer, Set<String>> map = new HashMap<>();
+		Map<Integer, Set<String>> map = new ConcurrentHashMap<>();
 		List<Integer> argsToRemove = new ArrayList<>();
 		for (int j = 0; j < argList.size(); j++) {
 			if (argList.get(j).equals("F")) {
 				argsToRemove.add(j);
-				Set<String> ipSet = new HashSet<>();
+				Set<String> ipSet = new CopyOnWriteArraySet<>();
 				for (int i = j + 1; i < argList.size(); i++) {
 					if (isIpAddressValid(argList.get(i))) {
 						argsToRemove.add(i);

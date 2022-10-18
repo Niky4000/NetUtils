@@ -1,6 +1,7 @@
 package com.httptunneling;
 
 import com.httptunneling.management.ManagementServer;
+import static com.httptunneling.management.ManagementServer.FIREWALL;
 import static com.httptunneling.utils.NetUtils.parceFilters;
 import static com.httptunneling.utils.NetUtils.readInputStream;
 import static com.httptunneling.utils.NetUtils.writeOutputStream;
@@ -74,6 +75,13 @@ public class TunnelStart {
 				} else if (argList.get(0).equals("PING")) {
 					ByteArrayOutputStream byteArrayOutputStream = readInputStream(() -> createSocket(argList));
 					System.out.println(new String(byteArrayOutputStream.toByteArray()));
+				} else if (argList.get(0).equals("PING2")) {
+					ByteArrayOutputStream byteArrayOutputStream = readInputStream(() -> createSocket(argList));
+					String myIp = new String(byteArrayOutputStream.toByteArray());
+					System.out.println(myIp);
+					List<String> subList = new ArrayList<>(argList.subList(4, argList.size()));
+					String additionalIps = subList.stream().reduce("", (s1, s2) -> s1 + " " + s2).trim();
+					writeOutputStream(() -> createSocket2(argList), (FIREWALL + " " + "0 F " + myIp + " " + additionalIps).getBytes());
 				}
 			}
 		}
@@ -82,6 +90,14 @@ public class TunnelStart {
 	private static Socket createSocket(List<String> argList) {
 		try {
 			return new Socket(argList.get(1), Integer.valueOf(argList.get(2)));
+		} catch (IOException ex) {
+			throw new RuntimeException(ex);
+		}
+	}
+
+	private static Socket createSocket2(List<String> argList) {
+		try {
+			return new Socket(argList.get(1), Integer.valueOf(argList.get(3)));
 		} catch (IOException ex) {
 			throw new RuntimeException(ex);
 		}
@@ -148,6 +164,14 @@ public class TunnelStart {
 
 	public static boolean isEverythingInterrupted() {
 		return interruptEverything.get();
+	}
+
+	public static void updateFireWall(Map<Integer, Set<String>> map) {
+		if (map.size() == 1 && map.containsKey(0)) {
+			filterMap.keySet().forEach(key -> filterMap.compute(key, (k, v) -> map.get(0)));
+		} else {
+			filterMap.putAll(map);
+		}
 	}
 
 	public static void interruptEverything(String[] args, final List<List<String>> argList2, final Thread thread) {
