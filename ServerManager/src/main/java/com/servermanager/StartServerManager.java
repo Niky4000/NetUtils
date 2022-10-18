@@ -72,7 +72,7 @@ public class StartServerManager {
 //		ExecCommandBean execCommand = sshClient.execCommand(new String[]{"cd /home/me/testDir"});
 //		System.out.println(execCommand);
 //		new SshUtils("130.255.170.238", "me", "viking", 22).uploadFiles(from, to);
-		new ConfigHandler(SAVE_FOLDER_NAME, CRYPTED_CONFIG).start(args, argList2 -> argumentsHandler(args, argList2));
+		new ConfigHandler(SAVE_FOLDER_NAME, CRYPTED_CONFIG).start(args, (args_, argList2) -> argumentsHandler(args_, argList2));
 	}
 
 	private static void argumentsHandler(String[] args, List<List<String>> argList2) {

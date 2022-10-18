@@ -461,7 +461,7 @@ public class FTPConnection implements Closeable {
             sendResponse(502, "Unknown command");
             return;
         }
-		System.out.println("Command: " + cmd + "!");
+//		System.out.println("Command: " + cmd + "!");
         processCommand(info, firstSpace != cmd.length() ? cmd.substring(firstSpace + 1) : "");
     }
 

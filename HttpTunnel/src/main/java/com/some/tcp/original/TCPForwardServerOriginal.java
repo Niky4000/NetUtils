@@ -5,6 +5,8 @@ package com.some.tcp.original;
  * Svetlin Nakov. It is freeware. For more information:
  * http://www.nakov.com/books/inetjava/
  */
+import static com.httptunneling.TunnelStart.addOpenedPort;
+import static com.httptunneling.TunnelStart.isEverythingInterrupted;
 import static com.some.tcp.DateUtils.getDateStr;
 import com.some.tcp.Logger;
 import java.io.*;
@@ -30,7 +32,8 @@ public class TCPForwardServerOriginal {
 //    }
 	public void init(int sourcePort, String destinationHost, int destinationPort) throws IOException {
 		ServerSocket serverSocket = new ServerSocket(sourcePort);
-		while (true) {
+		addOpenedPort(sourcePort, serverSocket);
+		while (!isEverythingInterrupted()) {
 			Socket clientSocket = serverSocket.accept();
 			ClientThread clientThread = new ClientThread(clientSocket, destinationHost, destinationPort);
 			clientThread.start();

@@ -1,5 +1,7 @@
 package com.some.tcp;
 
+import static com.httptunneling.TunnelStart.addOpenedPort;
+import static com.httptunneling.TunnelStart.isEverythingInterrupted;
 import com.some.tcp.bean.SocketBean;
 import static com.utils.Utils.fireWall;
 import java.net.*;
@@ -24,8 +26,7 @@ public class TCPForwardServerR2 {
 		serverListernerThread.setName("serverListernerThread");
 		clientListernerThread.start();
 		serverListernerThread.start();
-
-		while (true) {
+		while (!isEverythingInterrupted()) {
 			socketBean.waitForSocketsToBeReady();
 			Socket clientSocket2 = socketBean.getClientSocket2();
 			Socket serverSocket2 = socketBean.getServerSocket2();
@@ -40,7 +41,8 @@ public class TCPForwardServerR2 {
 			ServerSocket serverSocket = null;
 			try {
 				serverSocket = new ServerSocket(port);
-				while (true) {
+				addOpenedPort(port, serverSocket);
+				while (!isEverythingInterrupted()) {
 					Socket clientSocket = serverSocket.accept();
 					if (fireWall(port, clientSocket, filterMap)) {
 						clientSocket.close();
@@ -59,6 +61,9 @@ public class TCPForwardServerR2 {
 					} catch (Exception ee) {
 						Logger.log(ee);
 					}
+				}
+				if (isEverythingInterrupted()) {
+					break;
 				}
 			}
 		}

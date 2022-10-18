@@ -10,7 +10,7 @@
                 <goal>org.codehaus.mojo:exec-maven-plugin:1.5.0:exec</goal>
             </goals>
             <properties>
-                <exec.args>-classpath %classpath com.httptunneling.TunnelStart PING 130.255.170.238 7777</exec.args>
+                <exec.args>-classpath %classpath com.httptunneling.TunnelStart R 22777 22444 F 176.64.5.218 138.124.187.119 @ M 4444</exec.args>
                 <exec.executable>java</exec.executable>
             </properties>
         </action>
@@ -24,7 +24,7 @@
                 <goal>org.codehaus.mojo:exec-maven-plugin:1.5.0:exec</goal>
             </goals>
             <properties>
-                <exec.args>-agentlib:jdwp=transport=dt_socket,server=n,address=${jpda.address} -classpath %classpath com.httptunneling.TunnelStart PING 130.255.170.238 7777</exec.args>
+                <exec.args>-agentlib:jdwp=transport=dt_socket,server=n,address=${jpda.address} -classpath %classpath com.httptunneling.TunnelStart R 22777 22444 F 176.64.5.218 138.124.187.119 @ M 4444</exec.args>
                 <exec.executable>java</exec.executable>
                 <jpda.listen>true</jpda.listen>
             </properties>
@@ -39,7 +39,7 @@
                 <goal>org.codehaus.mojo:exec-maven-plugin:1.5.0:exec</goal>
             </goals>
             <properties>
-                <exec.args>-classpath %classpath com.httptunneling.TunnelStart PING 130.255.170.238 7777</exec.args>
+                <exec.args>-classpath %classpath com.httptunneling.TunnelStart R 22777 22444 F 176.64.5.218 138.124.187.119 @ M 4444</exec.args>
                 <exec.executable>java</exec.executable>
             </properties>
         </action>

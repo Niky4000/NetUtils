@@ -21,7 +21,7 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.function.Consumer;
+import java.util.function.BiConsumer;
 
 public class ConfigHandler {
 
@@ -35,22 +35,13 @@ public class ConfigHandler {
 		this.cryptedConfigName = cryptedConfigName;
 	}
 
-	public void start(String[] args, Consumer<List<List<String>>> argumentsHandler) throws Exception {
+	public void start(String[] args, BiConsumer<String[], List<List<String>>> argumentsHandler) throws Exception {
 		if (args.length > 0) {
 			if (args[0].equals("CRYPT")) {
 				List<String> plainArgList = new ArrayList(Arrays.asList(args));
 				plainArgList.remove(0);
 				if (!plainArgList.isEmpty()) {
-					File pathToSelfJar = getPathToSelfJar();
-					KeyPair keyPair = loadKeysFromResources(ConfigHandler.class);
-					PublicKey publicKey = keyPair.getPublic();
-					PrivateKey privateKey = keyPair.getPrivate();
-					String data = plainArgList.stream().reduce((str1, str2) -> str1 + " " + str2).get();
-					List<byte[]> crypted = crypt(publicKey, data);
-					String decrypted = decrypt(privateKey, crypted);
-					File saveFolder = new File(pathToSelfJar.getParentFile().getAbsolutePath() + File.separator + saveFolderName);
-					File cryptedConfig = new File(saveFolder.getAbsolutePath() + File.separator + cryptedConfigName);
-					saveToFile(cryptedConfig, crypted);
+					cryptConfigs(plainArgList);
 				} else {
 					System.out.println("There is no arguments!");
 				}
@@ -58,14 +49,27 @@ public class ConfigHandler {
 				System.out.println(getDecrypted());
 			} else {
 				List<List<String>> argList2 = getArgList(args);
-				argumentsHandler.accept(argList2);
+				argumentsHandler.accept(args, argList2);
 			}
 		} else {
 			String decrypted = getDecrypted();
 			String[] decryptedArgs = decrypted.split(" ");
-			List<List<String>> argList2 = getArgList(args);
-			argumentsHandler.accept(argList2);
+			List<List<String>> argList2 = getArgList(decryptedArgs);
+			argumentsHandler.accept(decryptedArgs, argList2);
 		}
+	}
+
+	public void cryptConfigs(List<String> plainArgList) throws Exception, InvalidKeySpecException, IOException, NoSuchAlgorithmException {
+		File pathToSelfJar = getPathToSelfJar();
+		KeyPair keyPair = loadKeysFromResources(ConfigHandler.class);
+		PublicKey publicKey = keyPair.getPublic();
+		PrivateKey privateKey = keyPair.getPrivate();
+		String data = plainArgList.stream().reduce((str1, str2) -> str1 + " " + str2).get();
+		List<byte[]> crypted = crypt(publicKey, data);
+		String decrypted = decrypt(privateKey, crypted);
+		File saveFolder = new File(pathToSelfJar.getParentFile().getAbsolutePath() + File.separator + saveFolderName);
+		File cryptedConfig = new File(saveFolder.getAbsolutePath() + File.separator + cryptedConfigName);
+		saveToFile(cryptedConfig, crypted);
 	}
 
 	private void saveToFile(File file, List<byte[]> dataList) throws IOException {
@@ -110,7 +114,7 @@ public class ConfigHandler {
 		return decrypted;
 	}
 
-	private List<List<String>> getArgList(String[] args) {
+	public static List<List<String>> getArgList(String[] args) {
 		List<String> argList = Arrays.asList(args);
 		List<List<String>> argList2 = new ArrayList<>();
 		argList2.add(new ArrayList<>());

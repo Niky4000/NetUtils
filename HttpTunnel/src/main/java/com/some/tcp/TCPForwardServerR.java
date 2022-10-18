@@ -1,5 +1,7 @@
 package com.some.tcp;
 
+import static com.httptunneling.TunnelStart.addOpenedPort;
+import static com.httptunneling.TunnelStart.isEverythingInterrupted;
 import static com.some.tcp.DateUtils.getDateStr;
 import java.io.*;
 import java.net.*;
@@ -74,7 +76,8 @@ public class TCPForwardServerR {
 			ServerSocket serverSocket = null;
 			try {
 				serverSocket = new ServerSocket(port);
-				while (true) {
+				addOpenedPort(port, serverSocket);
+				while (!isEverythingInterrupted()) {
 					Socket clientSocket = serverSocket.accept();
 					// Turn on keep-alive for both the sockets 
 					clientSocket.setKeepAlive(true);
@@ -94,6 +97,9 @@ public class TCPForwardServerR {
 					} catch (Exception ee) {
 						Logger.log(ee);
 					}
+				}
+				if (isEverythingInterrupted()) {
+					break;
 				}
 			}
 		}

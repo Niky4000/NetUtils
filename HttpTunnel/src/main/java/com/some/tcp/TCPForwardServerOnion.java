@@ -1,5 +1,7 @@
 package com.some.tcp;
 
+import static com.httptunneling.TunnelStart.addOpenedPort;
+import static com.httptunneling.TunnelStart.isEverythingInterrupted;
 import static com.utils.Utils.fireWall;
 import java.io.IOException;
 import java.net.InetSocketAddress;
@@ -19,7 +21,8 @@ public class TCPForwardServerOnion extends TCPForwardServer {
 	public void init(int sourcePort, String destinationHost, int destinationPort, Map<Integer, Set<String>> filterMap) {
 		try {
 			ServerSocket serverSocket = new ServerSocket(sourcePort);
-			while (true) {
+			addOpenedPort(sourcePort, serverSocket);
+			while (!isEverythingInterrupted()) {
 				Socket clientSocket = serverSocket.accept();
 				if (fireWall(sourcePort, clientSocket, filterMap)) {
 					clientSocket.close();

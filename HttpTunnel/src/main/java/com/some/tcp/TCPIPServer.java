@@ -5,7 +5,8 @@
  */
 package com.some.tcp;
 
-import java.io.IOException;
+import static com.httptunneling.TunnelStart.addOpenedPort;
+import static com.httptunneling.TunnelStart.isEverythingInterrupted;
 import java.io.OutputStream;
 import java.net.InetAddress;
 import java.net.ServerSocket;
@@ -20,7 +21,8 @@ public class TCPIPServer {
 	public void init(int sourcePort) {
 		try {
 			ServerSocket serverSocket = new ServerSocket(sourcePort);
-			while (true) {
+			addOpenedPort(sourcePort, serverSocket);
+			while (!isEverythingInterrupted()) {
 				try (Socket clientSocket = serverSocket.accept()) {
 					InetAddress inetAddress = clientSocket.getInetAddress();
 					String hostIp = inetAddress.getHostAddress();

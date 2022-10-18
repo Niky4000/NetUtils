@@ -18,6 +18,8 @@ import java.net.Socket;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 /**
  *
@@ -72,5 +74,16 @@ public class Utils {
 		InetAddress inetAddress = clientSocket.getInetAddress();
 		String hostIp = inetAddress.getHostAddress();
 		return Optional.ofNullable(filterMap.get(port)).map(set -> !set.stream().filter(ip -> hostIp.contains(ip)).findAny().isPresent()).orElse(false);
+	}
+
+	public static void join(Thread thread) {
+		while (true) {
+			try {
+				thread.join();
+				break;
+			} catch (InterruptedException ex) {
+				continue;
+			}
+		}
 	}
 }

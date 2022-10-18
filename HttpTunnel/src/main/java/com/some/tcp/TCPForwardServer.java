@@ -5,6 +5,9 @@ package com.some.tcp;
  * Svetlin Nakov. It is freeware. For more information:
  * http://www.nakov.com/books/inetjava/
  */
+import com.httptunneling.TunnelStart;
+import static com.httptunneling.TunnelStart.addOpenedPort;
+import static com.httptunneling.TunnelStart.isEverythingInterrupted;
 import static com.utils.Utils.fireWall;
 import java.io.*;
 import java.net.*;
@@ -32,7 +35,8 @@ public class TCPForwardServer {
 	public void init(int sourcePort, String destinationHost, int destinationPort, Map<Integer, Set<String>> filterMap) {
 		try {
 			ServerSocket serverSocket = new ServerSocket(sourcePort);
-			while (true) {
+			addOpenedPort(sourcePort, serverSocket);
+			while (!isEverythingInterrupted()) {
 				Socket clientSocket = serverSocket.accept();
 				if (fireWall(sourcePort, clientSocket, filterMap)) {
 					clientSocket.close();
