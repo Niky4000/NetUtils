@@ -1,6 +1,7 @@
 package com.httptunneling;
 
 import com.httptunneling.management.ManagementServer;
+import static com.httptunneling.management.ManagementServer.CHANGE_CONFIG;
 import static com.httptunneling.management.ManagementServer.FIREWALL;
 import static com.httptunneling.utils.NetUtils.parceFilters;
 import static com.httptunneling.utils.NetUtils.readInputStream;
@@ -25,8 +26,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CopyOnWriteArraySet;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -50,8 +49,8 @@ public class TunnelStart {
 		if (args[0].equals("S")) {
 			List<String> argList = Arrays.asList(args);
 			List<String> subList = new ArrayList<>(argList.subList(3, argList.size()));
-			String dataToWrite = subList.stream().reduce("", (s1, s2) -> s1 + " " + s2);
-			writeOutputStream(() -> createSocket(argList), dataToWrite.getBytes());
+			String dataToWrite = subList.stream().reduce("", (s1, s2) -> s1 + " " + s2).trim();
+			writeOutputStream(() -> createSocket(argList), (CHANGE_CONFIG + " " + dataToWrite).getBytes());
 		} else {
 			for (int i = 0; i < argList2.size(); i++) {
 				List<String> argList = argList2.get(i);

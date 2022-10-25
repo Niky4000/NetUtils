@@ -30,6 +30,8 @@ public class TCPIPServer {
 					try (OutputStream outputStream = clientSocket.getOutputStream()) {
 						outputStream.write(hostIp.getBytes());
 					}
+				} catch (Exception e) {
+					continue;
 				}
 			}
 		} catch (Exception e) {

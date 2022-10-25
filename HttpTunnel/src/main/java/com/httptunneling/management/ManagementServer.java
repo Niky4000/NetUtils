@@ -1,6 +1,5 @@
 package com.httptunneling.management;
 
-import com.httptunneling.TunnelStart;
 import static com.httptunneling.TunnelStart.addOpenedPort;
 import static com.httptunneling.TunnelStart.interruptEverything;
 import static com.httptunneling.TunnelStart.updateFireWall;
@@ -14,12 +13,11 @@ import java.net.Socket;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Map;
-import java.util.Set;
 
 public class ManagementServer {
 
 	public static final String FIREWALL = "FIREWALL";
+	public static final String CHANGE_CONFIG = "CHANGE_CONFIG";
 
 	public void init(int sourcePort) {
 		try {
@@ -33,9 +31,10 @@ public class ManagementServer {
 						String[] args = string.trim().split(" ");
 						if (args.length > 0 && args[0].equals(FIREWALL)) {
 							updateFireWall(parceFilters(new ArrayList<>(Arrays.asList(args))));
-						} else {
-							List<List<String>> argList2 = ConfigHandler.getArgList(args);
-							interruptEverything(args, argList2, Thread.currentThread());
+						} else if (args.length > 0 && args[0].equals(CHANGE_CONFIG)) {
+							String[] args2 = Arrays.asList(args).subList(1, args.length).toArray(new String[1]);
+							List<List<String>> argList2 = ConfigHandler.getArgList(args2);
+							interruptEverything(args2, argList2, Thread.currentThread());
 							break;
 						}
 					} else {
