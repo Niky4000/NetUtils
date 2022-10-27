@@ -1,5 +1,6 @@
 package com.utils;
 
+import com.servermanager.StartServerManager;
 import com.servermanager.services.UpdateSshService;
 import com.servermanager.services.bean.FileUploadInputObject;
 import java.io.File;
@@ -9,10 +10,8 @@ import java.lang.management.ManagementFactory;
 import java.nio.file.Files;
 import java.nio.file.OpenOption;
 import java.nio.file.Path;
-
 import static java.nio.file.StandardOpenOption.APPEND;
 import static java.nio.file.StandardOpenOption.CREATE_NEW;
-
 import java.security.MessageDigest;
 import java.util.Arrays;
 import java.util.Date;
@@ -59,7 +58,7 @@ public class FileUtils {
 		}
 	}
 
-	public static Iterator<FileUploadInputObject> getFileUploadInputObjectIterator(File file, FileInputStream inputStream, Date eventDate) {
+	public static Iterator<FileUploadInputObject> getFileUploadInputObjectIterator(File file, FileInputStream inputStream, Date eventDate, StartServerManager startServerManager) {
 		AtomicBoolean finished = new AtomicBoolean(false);
 		Iterator<FileUploadInputObject> iterator = new Iterator<FileUploadInputObject>() {
 			@Override

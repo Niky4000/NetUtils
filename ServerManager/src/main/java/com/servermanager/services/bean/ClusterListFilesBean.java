@@ -8,21 +8,24 @@ import java.util.Map;
 
 public class ClusterListFilesBean<T> extends TransferObject<T> {
 
-	Map<String, List<File>> listFiles;
+	private Map<String, List<File>> listFiles;
+	private transient final StartServerManager startServerManager;
 
-	public ClusterListFilesBean() {
+	public ClusterListFilesBean(StartServerManager startServerManager) {
+		this.startServerManager = startServerManager;
 	}
 
-	public ClusterListFilesBean(Map<String, List<File>> listFiles) {
+	public ClusterListFilesBean(Map<String, List<File>> listFiles, StartServerManager startServerManager) {
 		this.listFiles = listFiles;
+		this.startServerManager = startServerManager;
 	}
 
 	@Override
-	public TransferObject apply(TransferObject<T> object) {
-		FilesClusterService clusterService = StartServerManager.getClusterService();
+	public TransferObject apply(TransferObject<T> object, StartServerManager startServerManager) {
+		FilesClusterService clusterService = startServerManager.getClusterService();
 		if (clusterService != null) {
 			Map<String, List<File>> listFiles = clusterService.listFiles();
-			return new ClusterListFilesBean(listFiles);
+			return new ClusterListFilesBean(listFiles, startServerManager);
 		} else {
 			return new TransferObject();
 		}

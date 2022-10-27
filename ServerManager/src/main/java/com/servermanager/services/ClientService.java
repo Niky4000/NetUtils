@@ -1,5 +1,6 @@
 package com.servermanager.services;
 
+import com.servermanager.StartServerManager;
 import com.servermanager.services.bean.TransferObject;
 import java.io.IOException;
 import java.io.ObjectInputStream;
@@ -11,8 +12,11 @@ import java.util.List;
 
 public class ClientService extends AbstractService {
 
-	public ClientService(String host, int port) {
+	private final StartServerManager startServerManager;
+
+	public ClientService(String host, int port, StartServerManager startServerManager) {
 		super(host, port);
+		this.startServerManager = startServerManager;
 	}
 
 	public List<TransferObject> sendMessage(Iterator<? extends TransferObject> inputObject) throws IOException, ClassNotFoundException {
@@ -27,7 +31,7 @@ public class ClientService extends AbstractService {
 					outputStream.writeObject(next);
 					outputStream.flush();
 					outputObject = (TransferObject) inputStream.readObject();
-					outputObject.apply(null);
+					outputObject.apply(null, startServerManager);
 					listToReturn.add(outputObject);
 				} while (!outputObject.isDeadPill());
 			}

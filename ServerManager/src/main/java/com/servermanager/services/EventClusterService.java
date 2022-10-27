@@ -1,6 +1,7 @@
 package com.servermanager.services;
 
 import com.github.benmanes.caffeine.cache.Caffeine;
+import com.servermanager.StartServerManager;
 import static com.servermanager.caches.CacheNames.EVENTS;
 import static com.servermanager.services.FilesClusterService.EVENT_TIME_TO_LIVE;
 import com.servermanager.services.events.Event;
@@ -30,15 +31,17 @@ public class EventClusterService {
 	private final Integer clientPort;
 	private final Integer clientPortRange;
 	private final File home;
+	private final StartServerManager startServerManager;
 	private final com.github.benmanes.caffeine.cache.Cache<FileEventKey, Event> handledEvents = Caffeine.<FileEventKey, Event>newBuilder().expireAfterWrite(EVENT_TIME_TO_LIVE, TimeUnit.MINUTES).build();
 
-	public EventClusterService(String host, Integer port, String instanceName, Integer clientPort, Integer clientPortRange, File home) {
+	public EventClusterService(String host, Integer port, String instanceName, Integer clientPort, Integer clientPortRange, File home, StartServerManager startServerManager) {
 		this.host = host;
 		this.port = port;
 		this.instanceName = instanceName;
 		this.clientPort = clientPort;
 		this.clientPortRange = clientPortRange;
 		this.home = home;
+		this.startServerManager = startServerManager;
 	}
 
 	public void startCluster() {
@@ -69,21 +72,27 @@ public class EventClusterService {
 					}
 					if (fileEvent instanceof FileUploaded) {
 						try {
-							getHandledEvents().put(key, fileEvent);
-							new DownloadService(host, port).download(fileEvent.getFile().toPath(), home.toPath().resolve(fileEvent.getFile().getName()), new Date());
-							System.out.println("File event: " + fileEvent.getFile().getAbsolutePath() + " was downloaded!");
+							Event oldEvent = getHandledEvents().getIfPresent(key);
+							if (oldEvent == null || oldEvent.getDate().equals(fileEvent.getDate())) {
+								getHandledEvents().put(key, fileEvent);
+								new DownloadService(host, port, startServerManager).download(fileEvent.getFile().toPath(), home.toPath().resolve(fileEvent.getFile().getName()), new Date());
+								System.out.println("File event: " + fileEvent.getFile().getAbsolutePath() + " was downloaded!");
+							}
 						} catch (Exception e) {
 							e.printStackTrace();
 						}
 					} else if (fileEvent instanceof FileDeleted) {
-						getHandledEvents().put(key, fileEvent);
-						home.toPath().resolve(fileEvent.getFile().getName()).toFile().delete();
-						System.out.println("File event: " + fileEvent.getFile().getAbsolutePath() + " was deleted!");
+						Event oldEvent = getHandledEvents().getIfPresent(key);
+						if (oldEvent == null || oldEvent.getDate().equals(fileEvent.getDate())) {
+							getHandledEvents().put(key, fileEvent);
+							home.toPath().resolve(fileEvent.getFile().getName()).toFile().delete();
+							System.out.println("File event: " + fileEvent.getFile().getAbsolutePath() + " was deleted!");
+						}
 					}
 				}
-				if (eventCounter == 0) {
-					System.out.println("No events happened!");
-				}
+//				if (eventCounter == 0) {
+//					System.out.println("No events happened!");
+//				}
 				eventCounter = 0;
 				wait10Seconds();
 			} catch (Exception e) {

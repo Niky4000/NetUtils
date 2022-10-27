@@ -13,7 +13,7 @@ public class WatchThread extends Thread implements InterruptableThread {
 
 	private final Consumer<Set<File>> consumer;
 	private final AtomicInteger modificationCounter;
-	private static final long TIME_TO_WAIT = 10L * 1000L;
+	private static final long TIME_TO_WAIT = 2L * 1000L;
 	private volatile boolean interruptedExternally = false;
 	private final Set<File> modifiedFileSet = new HashSet<>();
 

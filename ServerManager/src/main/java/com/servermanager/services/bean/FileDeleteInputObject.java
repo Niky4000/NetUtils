@@ -3,6 +3,7 @@ package com.servermanager.services.bean;
 import com.servermanager.StartServerManager;
 import java.io.File;
 import java.util.Date;
+import java.util.Optional;
 
 public class FileDeleteInputObject<T> extends TransferObject<T> {
 
@@ -15,14 +16,14 @@ public class FileDeleteInputObject<T> extends TransferObject<T> {
 	}
 
 	@Override
-	public TransferObject apply(TransferObject<T> object) {
+	public TransferObject apply(TransferObject<T> object, StartServerManager startServerManager) {
 		file.delete();
 		try {
-			StartServerManager.getClusterService().fileDeletedEvent(file, eventDate);
+			startServerManager.getClusterService().fileDeletedEvent(file, eventDate);
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
-		if (file.getParentFile().listFiles().length == 0) {
+		if (file.getParentFile().listFiles().length == 0 && Optional.ofNullable(startServerManager.getClusterService()).map(cluster -> !cluster.getHome().equals(file.getParentFile())).orElse(true)) {
 			file.getParentFile().delete();
 		}
 		return new TransferObject();

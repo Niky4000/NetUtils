@@ -1,5 +1,6 @@
 package com.servermanager.services.bean;
 
+import com.servermanager.StartServerManager;
 import java.io.File;
 import java.util.Arrays;
 import java.util.List;
@@ -23,7 +24,7 @@ public class FileListRequestBean<T> extends TransferObject<T> {
 	}
 
 	@Override
-	public TransferObject apply(TransferObject<T> object) {
+	public TransferObject apply(TransferObject<T> object, StartServerManager startServerManager) {
 		if (request) {
 			return new FileListRequestBean(dir, Arrays.asList(dir.listFiles()));
 		} else {

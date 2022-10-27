@@ -1,5 +1,6 @@
 package com.servermanager.services.bean;
 
+import com.servermanager.StartServerManager;
 import com.utils.FileUtils;
 import java.io.File;
 import java.io.FileInputStream;
@@ -29,8 +30,11 @@ public class FileDownloadOutputObject<T> extends TransferObject<T> {
 	}
 
 	@Override
-	public TransferObject apply(TransferObject<T> object) {
+	public TransferObject apply(TransferObject<T> object, StartServerManager startServerManager) {
 		if (object == null) {
+			if (!from.exists()) {
+				return new FileUploadInputObject(eventDate);
+			}
 			if (from.isDirectory()) {
 				return new FileUploadInputObject(eventDate);
 			}
@@ -39,7 +43,7 @@ public class FileDownloadOutputObject<T> extends TransferObject<T> {
 			}
 			try {
 				inputStream = new FileInputStream(from);
-				iterator = FileUtils.getFileUploadInputObjectIterator(to, inputStream, eventDate);
+				iterator = FileUtils.getFileUploadInputObjectIterator(to, inputStream, eventDate, startServerManager);
 			} catch (Exception e) {
 				throw new RuntimeException(e);
 			}

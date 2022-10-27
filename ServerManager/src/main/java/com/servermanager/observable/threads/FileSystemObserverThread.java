@@ -1,7 +1,5 @@
 package com.servermanager.observable.threads;
 
-import static com.servermanager.StartServerManager.getEventClusterServiceMap;
-import com.servermanager.services.events.FileEventKey;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.FileSystems;
@@ -13,7 +11,6 @@ import static java.nio.file.StandardWatchEventKinds.OVERFLOW;
 import java.nio.file.WatchEvent;
 import java.nio.file.WatchKey;
 import java.nio.file.WatchService;
-import java.util.Optional;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

@@ -1,5 +1,6 @@
 package com.servermanager.services.bean;
 
+import com.servermanager.StartServerManager;
 import com.utils.FileUtils;
 import java.io.File;
 
@@ -26,7 +27,7 @@ public class GetPathToJarInputObject<T> extends TransferObject<T> {
 	}
 
 	@Override
-	public TransferObject apply(TransferObject<T> object) {
+	public TransferObject apply(TransferObject<T> object, StartServerManager startServerManager) {
 		return new GetPathToJarInputObject(FileUtils.getPathToJar(), FileUtils.getMd5Sum(FileUtils.getPathToJar().getAbsoluteFile()));
 	}
 }

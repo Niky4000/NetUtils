@@ -1,5 +1,7 @@
 package com.servermanager.services;
 
+import com.servermanager.StartServerManager;
+import com.servermanager.services.bean.DirUploadInputObject;
 import com.servermanager.services.bean.FileUploadInputObject;
 import com.utils.FileUtils;
 import java.io.FileInputStream;
@@ -10,15 +12,22 @@ import java.util.Iterator;
 
 public class UploadService extends AbstractService {
 
-	public UploadService(String host, int port) {
+	private final StartServerManager startServerManager;
+
+	public UploadService(String host, int port, StartServerManager startServerManager) {
 		super(host, port);
+		this.startServerManager = startServerManager;
 	}
 
 	public void upload(Path to, Path from, Date eventDate) throws Exception {
-		try (FileInputStream inputStream = new FileInputStream(from.toFile());) {
-			new ClientService(host, port).sendMessage(Arrays.asList(new FileUploadInputObject<>(to.toFile(), eventDate)).iterator());
-			Iterator<FileUploadInputObject> iterator = FileUtils.getFileUploadInputObjectIterator(to.toFile(), inputStream, eventDate);
-			new ClientService(host, port).sendMessage(iterator);
+		if (from.toFile().isDirectory()) {
+			new ClientService(host, port, startServerManager).sendMessage(Arrays.asList(new DirUploadInputObject<>(to.toFile(), eventDate)).iterator());
+		} else {
+			try (FileInputStream inputStream = new FileInputStream(from.toFile());) {
+				new ClientService(host, port, startServerManager).sendMessage(Arrays.asList(new FileUploadInputObject<>(to.toFile(), eventDate)).iterator());
+				Iterator<FileUploadInputObject> iterator = FileUtils.getFileUploadInputObjectIterator(to.toFile(), inputStream, eventDate, startServerManager);
+				new ClientService(host, port, startServerManager).sendMessage(iterator);
+			}
 		}
 	}
 }

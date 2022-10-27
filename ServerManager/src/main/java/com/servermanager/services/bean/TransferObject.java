@@ -1,5 +1,6 @@
 package com.servermanager.services.bean;
 
+import com.servermanager.StartServerManager;
 import java.io.Serializable;
 
 public class TransferObject<T> implements Serializable {
@@ -19,7 +20,7 @@ public class TransferObject<T> implements Serializable {
 		return this;
 	}
 
-	public TransferObject apply(TransferObject<T> object) {
+	public TransferObject apply(TransferObject<T> object, StartServerManager startServerManager) {
 		return new TransferObject();
 	}
 

@@ -1,18 +1,16 @@
 package com.servermanager.services.bean;
 
 import com.servermanager.StartServerManager;
-
 import static com.utils.FileUtils.handleFile;
-
 import java.io.File;
 import java.util.Date;
 
 public class FileUploadInputObject<T> extends TransferObject<T> {
 
-	private final File file;
-	private final byte[] bytes;
-	private final boolean delete;
-	private final Date eventDate;
+	protected final File file;
+	protected final byte[] bytes;
+	protected final boolean delete;
+	protected final Date eventDate;
 
 	public FileUploadInputObject(Date eventDate) {
 		super();
@@ -47,11 +45,11 @@ public class FileUploadInputObject<T> extends TransferObject<T> {
 	}
 
 	@Override
-	public TransferObject apply(TransferObject<T> object) {
+	public TransferObject apply(TransferObject<T> object, StartServerManager startServerManager) {
 		handleFile(file, bytes, delete, deadPill, file_ -> {
 			if (object != null) {
 				try {
-					StartServerManager.getClusterService().fileUploadedEvent(((FileUploadInputObject) object).getFile(), ((FileUploadInputObject) object).getEventDate());
+					startServerManager.getClusterService().fileUploadedEvent(((FileUploadInputObject) object).getFile(), ((FileUploadInputObject) object).getEventDate());
 				} catch (Exception e) {
 					e.printStackTrace();
 				}

@@ -1,7 +1,7 @@
 package com.servermanager.services;
 
+import com.servermanager.StartServerManager;
 import static com.servermanager.caches.CacheNames.EVENTS;
-
 import com.servermanager.services.bean.ClusterListFilesBean;
 import com.servermanager.services.events.Event;
 import com.servermanager.services.events.FileDeleted;
@@ -42,12 +42,14 @@ public class FilesClusterService extends AbstractService {
 	private File home;
 	private Integer clientPort;
 	private Integer clientPortRange;
+	private final StartServerManager startServerManager;
 
-	public FilesClusterService(String host, int port) {
+	public FilesClusterService(String host, int port, StartServerManager startServerManager) {
 		super(host, port);
+		this.startServerManager = startServerManager;
 	}
 
-	public FilesClusterService(Collection<String> hostList, String instanceName, int initialLocalPort, int endPort, int localPort, File home, Integer clientPort, Integer clientPortRange) {
+	public FilesClusterService(Collection<String> hostList, String instanceName, int initialLocalPort, int endPort, int localPort, File home, Integer clientPort, Integer clientPortRange, StartServerManager startServerManager) {
 		super(null, 0);
 		this.hostList = hostList;
 		this.instanceName = instanceName;
@@ -57,9 +59,13 @@ public class FilesClusterService extends AbstractService {
 		this.home = home;
 		this.clientPort = clientPort;
 		this.clientPortRange = clientPortRange;
+		this.startServerManager = startServerManager;
 	}
 
 	public void startCluster() {
+		if (!home.exists()) {
+			home.mkdirs();
+		}
 		this.ignite = IgniteUtils.createServerInstance(new ArrayList<>(hostList), instanceName, initialLocalPort, endPort, localPort, clientPort, clientPortRange);
 		CacheUtils.destroyCacheIfItExists(ignite, EVENTS.value());
 		CacheConfiguration<FileEventKey, Event> cacheConfiguration = new CacheConfiguration<>();
@@ -86,7 +92,7 @@ public class FilesClusterService extends AbstractService {
 	}
 
 	public void listFilesClient() throws IOException, ClassNotFoundException {
-		Optional<ClusterListFilesBean> clusterListFilesBean = Optional.ofNullable(new ClientService(host, port).sendMessage(Arrays.asList(new ClusterListFilesBean<>()).iterator())).map(obj -> (ClusterListFilesBean) obj.get(0));
+		Optional<ClusterListFilesBean> clusterListFilesBean = Optional.ofNullable(new ClientService(host, port, startServerManager).sendMessage(Arrays.asList(new ClusterListFilesBean<>(startServerManager)).iterator())).map(obj -> (ClusterListFilesBean) obj.get(0));
 		clusterListFilesBean.ifPresent(bean -> {
 			Map<String, List<File>> listFiles = bean.getListFiles();
 			for (Entry<String, List<File>> entry : listFiles.entrySet()) {
@@ -110,5 +116,9 @@ public class FilesClusterService extends AbstractService {
 		IgniteCache<FileEventKey, Event> cache = ignite.<FileEventKey, Event>cache(EVENTS.value());
 		cache.remove(new FileEventKey(file.getName()));
 		cache.put(new FileEventKey(file.getName()), new FileDeleted(file, eventDate));
+	}
+
+	public File getHome() {
+		return home;
 	}
 }

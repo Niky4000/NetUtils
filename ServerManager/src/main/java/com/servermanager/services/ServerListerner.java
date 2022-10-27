@@ -1,5 +1,6 @@
 package com.servermanager.services;
 
+import com.servermanager.StartServerManager;
 import com.servermanager.services.bean.TransferObject;
 import com.utils.WaitUtils;
 import java.io.EOFException;
@@ -15,9 +16,11 @@ public class ServerListerner {
 	private final int port;
 	private AtomicBoolean shutdown = new AtomicBoolean(false);
 	private static final int TIME_TO_WAIT = 60;
+	private final StartServerManager startServerManager;
 
-	public ServerListerner(int port) {
+	public ServerListerner(int port, StartServerManager startServerManager) {
 		this.port = port;
+		this.startServerManager = startServerManager;
 	}
 
 	public void listen() throws IOException {
@@ -46,7 +49,7 @@ public class ServerListerner {
 					ObjectOutputStream outputStream = new ObjectOutputStream(socket.getOutputStream());) {
 				do {
 					TransferObject inputObject = (TransferObject) inputStream.readObject();
-					TransferObject outputObject = inputObject.apply(globalInputObject);
+					TransferObject outputObject = inputObject.apply(globalInputObject, startServerManager);
 					globalInputObject = inputObject;
 					outputStream.writeObject(outputObject);
 					outputStream.flush();

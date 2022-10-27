@@ -1,7 +1,6 @@
 package com.servermanager.services;
 
-import static com.servermanager.StartServerManager.getEventClusterServiceMap;
-
+import com.servermanager.StartServerManager;
 import com.servermanager.observable.threads.FileSystemObserverThread;
 import com.servermanager.observable.threads.WatchThread;
 import com.servermanager.services.events.FileDeleted;
@@ -25,27 +24,32 @@ public class ObservableFileSystemService {
 	private final File home;
 	private static final String OBSERVABLE = "observable_";
 	private static AtomicInteger fileSystemObserverThreadCounter = new AtomicInteger(0);
+	private final StartServerManager startServerManager;
 
-	public ObservableFileSystemService(File home) {
+	public ObservableFileSystemService(File home, StartServerManager startServerManager) {
 		this.home = home;
+		this.startServerManager = startServerManager;
 		List<File> observableDirs = Arrays.stream(this.home.listFiles()).filter(file -> file.getName().startsWith(OBSERVABLE)).collect(Collectors.toList());
 	}
 
-	public static void initActionsBeforeCreatingTheListerners(String host, Integer port, Path to, File dir) throws IOException, ClassNotFoundException, Exception {
-		List<File> remoteFileList = new FileService(host, port).getFileList(to.toFile());
+	public static void initActionsBeforeCreatingTheListerners(String host, Integer port, Path to, File dir, StartServerManager startServerManager) throws IOException, ClassNotFoundException, Exception {
+		if (!dir.exists()) {
+			dir.mkdirs();
+		}
+		List<File> remoteFileList = new FileService(host, port, startServerManager).getFileList(to.toFile());
 		List<File> localFileList = Arrays.asList(dir.listFiles());
 		Map<String, File> remoteFileMap = getFileMap(remoteFileList);
 		Map<String, File> localFileMap = getFileMap(localFileList);
 		Map<String, File> remoteFileMapWithoutLocalFiles = getFilesThatDontExistOnOtherSide(remoteFileMap, localFileMap);
 		Map<String, File> localFileMapWithoutRemoteFiles = getFilesThatDontExistOnOtherSide(localFileMap, remoteFileMap);
 		if (!remoteFileMapWithoutLocalFiles.isEmpty()) {
-			DownloadService downloadService = new DownloadService(host, port);
+			DownloadService downloadService = new DownloadService(host, port, startServerManager);
 			for (File file : remoteFileMapWithoutLocalFiles.values()) {
 				downloadService.download(file.toPath(), dir.toPath().resolve(file.getName()), new Date());
 			}
 		}
 		if (!localFileMapWithoutRemoteFiles.isEmpty()) {
-			UploadService uploadService = new UploadService(host, port);
+			UploadService uploadService = new UploadService(host, port, startServerManager);
 			for (File file : localFileMapWithoutRemoteFiles.values()) {
 				uploadService.upload(to.resolve(file.getName()), file.toPath(), new Date());
 			}
@@ -64,23 +68,25 @@ public class ObservableFileSystemService {
 		return fileList.stream().collect(Collectors.toMap(File::getName, file -> file));
 	}
 
-	public static void createFileSystemListerner(String host, Integer port, Path to, File dir) {
+	public static void createFileSystemListerner(String host, Integer port, Path to, File dir, StartServerManager startServerManager) {
 		AtomicInteger modificationCounter = new AtomicInteger(0);
 		int threadIndex = fileSystemObserverThreadCounter.incrementAndGet();
 		WatchThread watchThread = new WatchThread(threadIndex, modifiedFileSet -> {
 			for (File file : modifiedFileSet) {
 				try {
-					if (Optional.ofNullable(getEventClusterServiceMap().get(dir)).map(eventService -> eventService.getHandledEvents()).map(cache -> cache.asMap().containsKey(new FileEventKey(file.getName()))).orElse(false)) {
-						continue;
-					}
+//					if (Optional.ofNullable(startServerManager.getEventClusterServiceMap().get(dir)).map(eventService -> eventService.getHandledEvents()).map(cache -> {
+//						return cache.asMap().containsKey(new FileEventKey(file.getName()));
+//					}).orElse(false)) {
+//						continue;
+//					}
 					Date eventDate = new Date();
 					if (file.exists()) {
-						getEventClusterServiceMap().get(dir).getHandledEvents().put(new FileEventKey(file.getName()), new FileUploaded(file, eventDate));
-						new UploadService(host, port).upload(to.resolve(file.getName()), file.toPath(), eventDate);
+						startServerManager.getEventClusterServiceMap().get(dir).getHandledEvents().put(new FileEventKey(file.getName()), new FileUploaded(file, eventDate));
+						new UploadService(host, port, startServerManager).upload(to.resolve(file.getName()), file.toPath(), eventDate);
 						System.out.println("File " + file.getAbsolutePath() + " was sent!");
 					} else {
-						getEventClusterServiceMap().get(dir).getHandledEvents().put(new FileEventKey(file.getName()), new FileDeleted(file, eventDate));
-						new DeleteService(host, port).delete(to.resolve(file.getName()), eventDate);
+						startServerManager.getEventClusterServiceMap().get(dir).getHandledEvents().put(new FileEventKey(file.getName()), new FileDeleted(file, eventDate));
+						new DeleteService(host, port, startServerManager).delete(to.resolve(file.getName()), eventDate);
 						System.out.println("File " + file.getAbsolutePath() + " was deleted!");
 					}
 				} catch (Exception e) {
