@@ -4,6 +4,8 @@ import com.servermanager.StartServerManager;
 import com.utils.FileUtils;
 import java.io.File;
 import java.io.FileInputStream;
+import java.nio.file.Files;
+import java.nio.file.attribute.FileTime;
 import java.util.Date;
 import java.util.Iterator;
 
@@ -65,6 +67,7 @@ public class FileDownloadOutputObject<T> extends TransferObject<T> {
 		if (inputStream != null) {
 			try {
 				inputStream.close();
+				Files.setLastModifiedTime(to.toPath(), FileTime.fromMillis(eventDate.getTime()));
 			} catch (Exception e) {
 				throw new RuntimeException(e);
 			}

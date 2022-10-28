@@ -32,7 +32,7 @@ public class EventClusterService {
 	private final Integer clientPortRange;
 	private final File home;
 	private final StartServerManager startServerManager;
-	private final com.github.benmanes.caffeine.cache.Cache<FileEventKey, Event> handledEvents = Caffeine.<FileEventKey, Event>newBuilder().expireAfterWrite(EVENT_TIME_TO_LIVE, TimeUnit.MINUTES).build();
+	private final com.github.benmanes.caffeine.cache.Cache<FileEventKey, Event> handledEvents = Caffeine.<FileEventKey, Event>newBuilder().expireAfterWrite(EVENT_TIME_TO_LIVE + EVENT_TIME_TO_LIVE, TimeUnit.MINUTES).build();
 
 	public EventClusterService(String host, Integer port, String instanceName, Integer clientPort, Integer clientPortRange, File home, StartServerManager startServerManager) {
 		this.host = host;
@@ -73,20 +73,22 @@ public class EventClusterService {
 					if (fileEvent instanceof FileUploaded) {
 						try {
 							Event oldEvent = getHandledEvents().getIfPresent(key);
-							if (oldEvent == null || oldEvent.getDate().equals(fileEvent.getDate())) {
-								getHandledEvents().put(key, fileEvent);
-								new DownloadService(host, port, startServerManager).download(fileEvent.getFile().toPath(), home.toPath().resolve(fileEvent.getFile().getName()), new Date());
-								System.out.println("File event: " + fileEvent.getFile().getAbsolutePath() + " was downloaded!");
+							if (oldEvent == null || oldEvent.getDate().before(fileEvent.getDate()) || oldEvent.getDate().equals(fileEvent.getDate())) {
+								Date now = new Date();
+								getHandledEvents().put(key, new Event(now));
+								new DownloadService(host, port, startServerManager).download(fileEvent.getFile().toPath(), home.toPath().resolve(fileEvent.getFile().getName()), now);
+								System.out.println("File event: " + home.toPath().resolve(fileEvent.getFile().getName()).toFile().getAbsolutePath() + " was downloaded!");
 							}
 						} catch (Exception e) {
 							e.printStackTrace();
 						}
 					} else if (fileEvent instanceof FileDeleted) {
 						Event oldEvent = getHandledEvents().getIfPresent(key);
-						if (oldEvent == null || oldEvent.getDate().equals(fileEvent.getDate())) {
+						File fileToDelete = home.toPath().resolve(fileEvent.getFile().getName()).toFile();
+						if (fileToDelete.exists() && (oldEvent == null || oldEvent.getDate().before(fileEvent.getDate()) || oldEvent.getDate().equals(fileEvent.getDate()))) {
 							getHandledEvents().put(key, fileEvent);
-							home.toPath().resolve(fileEvent.getFile().getName()).toFile().delete();
-							System.out.println("File event: " + fileEvent.getFile().getAbsolutePath() + " was deleted!");
+							fileToDelete.delete();
+							System.out.println("File event: " + fileToDelete.getAbsolutePath() + " was deleted!");
 						}
 					}
 				}

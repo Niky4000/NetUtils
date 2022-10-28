@@ -3,6 +3,7 @@ package com.servermanager.services;
 import com.servermanager.StartServerManager;
 import com.servermanager.observable.threads.FileSystemObserverThread;
 import com.servermanager.observable.threads.WatchThread;
+import com.servermanager.services.events.Event;
 import com.servermanager.services.events.FileDeleted;
 import com.servermanager.services.events.FileEventKey;
 import com.servermanager.services.events.FileUploaded;
@@ -74,11 +75,12 @@ public class ObservableFileSystemService {
 		WatchThread watchThread = new WatchThread(threadIndex, modifiedFileSet -> {
 			for (File file : modifiedFileSet) {
 				try {
-//					if (Optional.ofNullable(startServerManager.getEventClusterServiceMap().get(dir)).map(eventService -> eventService.getHandledEvents()).map(cache -> {
-//						return cache.asMap().containsKey(new FileEventKey(file.getName()));
-//					}).orElse(false)) {
-//						continue;
-//					}
+					if (Optional.ofNullable(startServerManager.getEventClusterServiceMap().get(dir)).map(eventService -> eventService.getHandledEvents()).map(cache -> {
+						Event event = cache.asMap().get(new FileEventKey(file.getName()));
+						return event != null && Long.valueOf((event.getDate().getTime() / 1000) * 1000).equals(file.lastModified());
+					}).orElse(false)) {
+						continue;
+					}
 					Date eventDate = new Date();
 					if (file.exists()) {
 						startServerManager.getEventClusterServiceMap().get(dir).getHandledEvents().put(new FileEventKey(file.getName()), new FileUploaded(file, eventDate));
