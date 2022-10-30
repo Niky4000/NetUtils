@@ -35,6 +35,7 @@ public class StartServerManager {
 	private static final String SAVE_FOLDER_NAME = "dat";
 	private static final String CRYPTED_CONFIG = "sys.dat";
 	private FilesClusterService clusterService;
+	private ServerListerner serverListerner;
 	private ConcurrentMap<File, EventClusterService> eventClusterServiceMap = new ConcurrentHashMap<>();
 
 	public static void main(String[] args) {
@@ -53,7 +54,7 @@ public class StartServerManager {
 				if (!argList.isEmpty()) {
 					if (argList.get(0).equals("START")) {
 						Integer port = Integer.valueOf(getParameter("-port", argList));
-						ServerListerner serverListerner = new ServerListerner(port, this);
+						serverListerner = new ServerListerner(port, this);
 						serverListerner.listen();
 					}
 					if (argList.get(0).equals("CLUSTER")) {
@@ -162,5 +163,9 @@ public class StartServerManager {
 
 	public ConcurrentMap<File, EventClusterService> getEventClusterServiceMap() {
 		return eventClusterServiceMap;
+	}
+
+	public ServerListerner getServerListerner() {
+		return serverListerner;
 	}
 }

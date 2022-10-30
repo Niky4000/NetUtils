@@ -4,12 +4,16 @@ import com.github.benmanes.caffeine.cache.Caffeine;
 import com.servermanager.StartServerManager;
 import static com.servermanager.caches.CacheNames.EVENTS;
 import static com.servermanager.services.FilesClusterService.EVENT_TIME_TO_LIVE;
+import com.servermanager.services.bean.EventObject;
 import com.servermanager.services.events.Event;
 import com.servermanager.services.events.FileDeleted;
 import com.servermanager.services.events.FileEvent;
 import com.servermanager.services.events.FileEventKey;
 import com.servermanager.services.events.FileUploaded;
 import java.io.File;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
+import java.net.Socket;
 import java.util.Date;
 import java.util.Iterator;
 import java.util.Optional;
@@ -50,9 +54,11 @@ public class EventClusterService {
 	}
 
 	public void listenToFileEvents() {
+		createEventThread(Thread.currentThread());
 		while (true) {
 			try {
 				int eventCounter = 0;
+				System.out.println(Thread.currentThread().getName() + " is going to check server events!");
 				Iterator<Cache.Entry<FileEventKey, Event>> iterator = ignite.<FileEventKey, Event>cache(EVENTS.value()).query(new ScanQuery<FileEventKey, Event>((date, event) -> event instanceof FileEvent)).iterator();
 //				Iterator<Cache.Entry<FileEventKey, Event>> iterator = ignite.<FileEventKey, Event>cache(EVENTS.value()).query(new ScanQuery<FileEventKey, Event>()).iterator();
 				while (iterator.hasNext()) {
@@ -104,11 +110,44 @@ public class EventClusterService {
 		}
 	}
 
+	private void createEventThread(Thread threadToInterrupt) {
+		Thread eventThread = new Thread(() -> {
+			while (true) {
+				try (Socket socket = new Socket(host, port);
+						ObjectOutputStream outputStream = new ObjectOutputStream(socket.getOutputStream());
+						ObjectInputStream inputStream = new ObjectInputStream(socket.getInputStream());) {
+//					socket.setSoTimeout(10000); // Debug!
+					outputStream.writeObject(new EventObject());
+					outputStream.flush();
+					Object readObject = inputStream.readObject(); // It will be blocked here!
+					System.out.println(readObject);
+				} catch (Exception ex) {
+//					ex.printStackTrace();
+					wait10Seconds();
+				} finally {
+					threadToInterrupt.interrupt();
+				}
+			}
+		});
+		eventThread.setName("EventThread");
+		eventThread.start();
+	}
+
 	private void wait10Seconds() {
 		try {
 			Thread.sleep(10 * 1000);
 		} catch (InterruptedException ex) {
-			Logger.getLogger(EventClusterService.class.getName()).log(Level.SEVERE, null, ex);
+//			Logger.getLogger(EventClusterService.class.getName()).log(Level.SEVERE, null, ex);
+			System.out.println(Thread.currentThread().getName() + " was interrupted!");
+		}
+	}
+
+	private void wait200Seconds() {
+		try {
+			Thread.sleep(200 * 1000);
+		} catch (InterruptedException ex) {
+//			Logger.getLogger(EventClusterService.class.getName()).log(Level.SEVERE, null, ex);
+			System.out.println(Thread.currentThread().getName() + " was interrupted!");
 		}
 	}
 

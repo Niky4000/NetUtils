@@ -109,6 +109,7 @@ public class FilesClusterService extends AbstractService {
 		IgniteCache<FileEventKey, Event> cache = ignite.<FileEventKey, Event>cache(EVENTS.value());
 		cache.remove(new FileEventKey(file.getName()));
 		cache.put(new FileEventKey(file.getName()), new FileUploaded(file, eventDate));
+		startServerManager.getServerListerner().sendInterruptionsToTheRemoteEventListerners();
 	}
 
 	public void fileDeletedEvent(File file, Date eventDate) {
@@ -116,6 +117,7 @@ public class FilesClusterService extends AbstractService {
 		IgniteCache<FileEventKey, Event> cache = ignite.<FileEventKey, Event>cache(EVENTS.value());
 		cache.remove(new FileEventKey(file.getName()));
 		cache.put(new FileEventKey(file.getName()), new FileDeleted(file, eventDate));
+		startServerManager.getServerListerner().sendInterruptionsToTheRemoteEventListerners();
 	}
 
 	public File getHome() {
