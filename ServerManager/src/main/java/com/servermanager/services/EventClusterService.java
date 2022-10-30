@@ -18,8 +18,6 @@ import java.util.Date;
 import java.util.Iterator;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 import javax.cache.Cache;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.cache.query.ScanQuery;
