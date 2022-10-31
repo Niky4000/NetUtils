@@ -3,6 +3,7 @@ package com.servermanager.services;
 import com.servermanager.StartServerManager;
 import static com.servermanager.caches.CacheNames.EVENTS;
 import com.servermanager.services.bean.ClusterListFilesBean;
+import com.servermanager.services.events.ClipboardEvent;
 import com.servermanager.services.events.Event;
 import com.servermanager.services.events.FileDeleted;
 import com.servermanager.services.events.FileEventKey;
@@ -117,6 +118,13 @@ public class FilesClusterService extends AbstractService {
 		IgniteCache<FileEventKey, Event> cache = ignite.<FileEventKey, Event>cache(EVENTS.value());
 		cache.remove(new FileEventKey(file.getName()));
 		cache.put(new FileEventKey(file.getName()), new FileDeleted(file, eventDate));
+		startServerManager.getServerListerner().sendInterruptionsToTheRemoteEventListerners();
+	}
+
+	public void clipboardChanged(ClipboardEvent clipboardEvent) {
+		IgniteCache<ClipboardEvent, Event> cache = ignite.<ClipboardEvent, Event>cache(EVENTS.value());
+		cache.remove(clipboardEvent);
+		cache.put(clipboardEvent, clipboardEvent);
 		startServerManager.getServerListerner().sendInterruptionsToTheRemoteEventListerners();
 	}
 

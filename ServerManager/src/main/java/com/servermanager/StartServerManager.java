@@ -118,6 +118,8 @@ public class StartServerManager {
 						Path to = Paths.get(getParameter("-to", argList));
 						initActionsBeforeCreatingTheListerners(host, port, to, dir, this);
 						createFileSystemListerner(host, port, to, dir, this);
+					} else if(argList.get(0).equals("CLIPBOARD")){
+						
 					} else if (argList.get(0).equals("EVENT")) {
 						String host = getParameter("-host", argList);
 						Integer port = Integer.valueOf(getParameter("-port", argList));

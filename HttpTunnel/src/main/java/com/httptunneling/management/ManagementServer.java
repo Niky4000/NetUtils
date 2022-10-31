@@ -18,6 +18,7 @@ public class ManagementServer {
 
 	public static final String FIREWALL = "FIREWALL";
 	public static final String CHANGE_CONFIG = "CHANGE_CONFIG";
+	private static final int TIMEOUT = 2000;
 
 	public void init(int sourcePort) {
 		try {
@@ -25,6 +26,7 @@ public class ManagementServer {
 			addOpenedPort(null, serverSocket);
 			while (true) {
 				try (Socket clientSocket = serverSocket.accept()) {
+					clientSocket.setSoTimeout(TIMEOUT);
 					ByteArrayOutputStream byteArrayOutputStream = readInputStream(() -> clientSocket);
 					String string = new String(byteArrayOutputStream.toByteArray());
 					if (string.length() > 0 && string.contains(" ")) {
