@@ -26,7 +26,7 @@ public class FileListRequestBean<T> extends TransferObject<T> {
 	@Override
 	public TransferObject apply(TransferObject<T> object, StartServerManager startServerManager) {
 		if (request) {
-			if (dir.exists()) {
+			if (!dir.exists()) {
 				dir.mkdirs();
 			}
 			return new FileListRequestBean(dir, Arrays.asList(dir.listFiles()));
