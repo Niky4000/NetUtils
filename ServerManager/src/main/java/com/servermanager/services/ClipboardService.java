@@ -26,9 +26,9 @@ public class ClipboardService extends AbstractService {
 			do {
 				WaitUtils.waitSomeTime(SECONDS_TO_WAIT);
 				String newClipboardData = ClipboardUtils.getClipboardData();
-				if (!clipboardData.equals(newClipboardData)) {
+				if (newClipboardData.length() > 0 && !clipboardData.equals(newClipboardData)) {
 					try {
-						clipboardData = newClipboardData;
+						clipboardData = new String(newClipboardData);
 						new ClientService(host, port, startServerManager).sendMessage(Arrays.asList(new ClipboardObject(new ClipboardEvent(clipboardData))).iterator());
 					} catch (IOException ex) {
 						Logger.getLogger(ClipboardService.class.getName()).log(Level.SEVERE, null, ex);
