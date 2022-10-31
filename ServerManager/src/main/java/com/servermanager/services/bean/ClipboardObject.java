@@ -2,7 +2,6 @@ package com.servermanager.services.bean;
 
 import com.servermanager.StartServerManager;
 import com.servermanager.services.events.ClipboardEvent;
-import java.util.Optional;
 
 public class ClipboardObject extends TransferObject<String> {
 

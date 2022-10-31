@@ -5,11 +5,13 @@ import com.servermanager.StartServerManager;
 import static com.servermanager.caches.CacheNames.EVENTS;
 import static com.servermanager.services.FilesClusterService.EVENT_TIME_TO_LIVE;
 import com.servermanager.services.bean.EventObject;
+import com.servermanager.services.events.ClipboardEvent;
 import com.servermanager.services.events.Event;
 import com.servermanager.services.events.FileDeleted;
 import com.servermanager.services.events.FileEvent;
 import com.servermanager.services.events.FileEventKey;
 import com.servermanager.services.events.FileUploaded;
+import com.utils.ClipboardUtils;
 import java.io.File;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
@@ -23,6 +25,7 @@ import org.apache.ignite.Ignition;
 import org.apache.ignite.cache.query.ScanQuery;
 import org.apache.ignite.client.IgniteClient;
 import org.apache.ignite.configuration.ClientConfiguration;
+import static com.utils.Logger.println;
 
 public class EventClusterService {
 
@@ -56,53 +59,60 @@ public class EventClusterService {
 		while (true) {
 			try {
 				int eventCounter = 0;
-				System.out.println(Thread.currentThread().getName() + " is going to check server events!");
-				Iterator<Cache.Entry<FileEventKey, Event>> iterator = ignite.<FileEventKey, Event>cache(EVENTS.value()).query(new ScanQuery<FileEventKey, Event>((date, event) -> event instanceof FileEvent)).iterator();
+				println(Thread.currentThread().getName() + " is going to check server events!");
+				Iterator<Cache.Entry<FileEventKey, Event>> iterator = ignite.<FileEventKey, Event>cache(EVENTS.value()).query(new ScanQuery<FileEventKey, Event>((date, event) -> event instanceof Event)).iterator();
 //				Iterator<Cache.Entry<FileEventKey, Event>> iterator = ignite.<FileEventKey, Event>cache(EVENTS.value()).query(new ScanQuery<FileEventKey, Event>()).iterator();
 				while (iterator.hasNext()) {
 					eventCounter++;
 					Cache.Entry<FileEventKey, Event> next = iterator.next();
 					FileEventKey key = next.getKey();
-					FileEvent fileEvent = (FileEvent) next.getValue();
+					Event event = (Event) next.getValue();
 					if (Optional.ofNullable(getHandledEvents().asMap().get(key)).map(Event::getDate).map(date -> {
-						Date fileEventDate = fileEvent.getDate();
+						Date fileEventDate = event.getDate();
 						boolean b = date.equals(fileEventDate);
 						if (!b) {
-							System.out.println("File: " + key.getName() + " date: " + date + " eventDate: " + fileEventDate + "!");
+							println("File: " + key.getName() + " date: " + date + " eventDate: " + fileEventDate + "!");
 						}
 						return b;
 					}).orElse(false)) {
 						continue;
 					}
-					if (fileEvent instanceof FileUploaded) {
+					if (event instanceof FileUploaded) {
 						try {
 							Event oldEvent = getHandledEvents().getIfPresent(key);
-							if (oldEvent == null || oldEvent.getDate().before(fileEvent.getDate()) || oldEvent.getDate().equals(fileEvent.getDate())) {
+							if (oldEvent == null || oldEvent.getDate().before(event.getDate()) || oldEvent.getDate().equals(event.getDate())) {
 								Date now = new Date();
 								getHandledEvents().put(key, new Event(now));
-								new DownloadService(host, port, startServerManager).download(fileEvent.getFile().toPath(), home.toPath().resolve(fileEvent.getFile().getName()), now);
-								System.out.println("File event: " + home.toPath().resolve(fileEvent.getFile().getName()).toFile().getAbsolutePath() + " was downloaded!");
+								new DownloadService(host, port, startServerManager).download(((FileEvent) event).getFile().toPath(), home.toPath().resolve(((FileEvent) event).getFile().getName()), now);
+								println("File event: " + home.toPath().resolve(((FileEvent) event).getFile().getName()).toFile().getAbsolutePath() + " was downloaded!");
 							}
 						} catch (Exception e) {
-							e.printStackTrace();
+							println(e);
 						}
-					} else if (fileEvent instanceof FileDeleted) {
+					} else if (event instanceof FileDeleted) {
 						Event oldEvent = getHandledEvents().getIfPresent(key);
-						File fileToDelete = home.toPath().resolve(fileEvent.getFile().getName()).toFile();
-						if (fileToDelete.exists() && (oldEvent == null || oldEvent.getDate().before(fileEvent.getDate()) || oldEvent.getDate().equals(fileEvent.getDate()))) {
-							getHandledEvents().put(key, fileEvent);
+						File fileToDelete = home.toPath().resolve(((FileEvent) event).getFile().getName()).toFile();
+						if (fileToDelete.exists() && (oldEvent == null || oldEvent.getDate().before(event.getDate()) || oldEvent.getDate().equals(event.getDate()))) {
+							getHandledEvents().put(key, event);
 							fileToDelete.delete();
-							System.out.println("File event: " + fileToDelete.getAbsolutePath() + " was deleted!");
+							println("File event: " + fileToDelete.getAbsolutePath() + " was deleted!");
+						}
+					} else if (event instanceof ClipboardEvent) {
+						Event oldEvent = getHandledEvents().getIfPresent(key);
+						if (oldEvent == null || oldEvent.getDate().before(event.getDate()) || oldEvent.getDate().equals(event.getDate())) {
+							getHandledEvents().put(key, event);
+							ClipboardUtils.setClipboard(((ClipboardEvent) event).getClipboardData());
+							println("ClipboardEvent event: " + ((ClipboardEvent) event).getClipboardData() + " was handled!");
 						}
 					}
 				}
 //				if (eventCounter == 0) {
-//					System.out.println("No events happened!");
+//					println("No events happened!");
 //				}
 				eventCounter = 0;
 				wait10Seconds();
 			} catch (Exception e) {
-				e.printStackTrace();
+				println(e);
 				wait10Seconds();
 			}
 		}
@@ -118,7 +128,7 @@ public class EventClusterService {
 					outputStream.writeObject(new EventObject());
 					outputStream.flush();
 					Object readObject = inputStream.readObject(); // It will be blocked here!
-					System.out.println(readObject);
+					println(readObject);
 				} catch (Exception ex) {
 //					ex.printStackTrace();
 					wait10Seconds();
@@ -136,7 +146,7 @@ public class EventClusterService {
 			Thread.sleep(10 * 1000);
 		} catch (InterruptedException ex) {
 //			Logger.getLogger(EventClusterService.class.getName()).log(Level.SEVERE, null, ex);
-			System.out.println(Thread.currentThread().getName() + " was interrupted!");
+			println(Thread.currentThread().getName() + " was interrupted!");
 		}
 	}
 
@@ -145,7 +155,7 @@ public class EventClusterService {
 			Thread.sleep(200 * 1000);
 		} catch (InterruptedException ex) {
 //			Logger.getLogger(EventClusterService.class.getName()).log(Level.SEVERE, null, ex);
-			System.out.println(Thread.currentThread().getName() + " was interrupted!");
+			println(Thread.currentThread().getName() + " was interrupted!");
 		}
 	}
 

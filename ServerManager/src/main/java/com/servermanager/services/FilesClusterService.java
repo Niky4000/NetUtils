@@ -10,6 +10,7 @@ import com.servermanager.services.events.FileEventKey;
 import com.servermanager.services.events.FileUploaded;
 import com.utils.CacheUtils;
 import com.utils.IgniteUtils;
+import static com.utils.Logger.println;
 import com.utils.MapBuilder;
 import java.io.File;
 import java.io.IOException;
@@ -97,9 +98,9 @@ public class FilesClusterService extends AbstractService {
 		clusterListFilesBean.ifPresent(bean -> {
 			Map<String, List<File>> listFiles = bean.getListFiles();
 			for (Entry<String, List<File>> entry : listFiles.entrySet()) {
-				System.out.println("Host: " + entry.getKey());
+				println("Host: " + entry.getKey());
 				for (File file : entry.getValue()) {
-					System.out.println("File: " + file.getAbsolutePath());
+					println("File: " + file.getAbsolutePath());
 				}
 			}
 		});
@@ -122,9 +123,10 @@ public class FilesClusterService extends AbstractService {
 	}
 
 	public void clipboardChanged(ClipboardEvent clipboardEvent) {
-		IgniteCache<ClipboardEvent, Event> cache = ignite.<ClipboardEvent, Event>cache(EVENTS.value());
-		cache.remove(clipboardEvent);
-		cache.put(clipboardEvent, clipboardEvent);
+		FileEventKey fileEventKey = new FileEventKey(clipboardEvent.getClipboardData());
+		IgniteCache<FileEventKey, Event> cache = ignite.<FileEventKey, Event>cache(EVENTS.value());
+		cache.remove(fileEventKey);
+		cache.put(fileEventKey, clipboardEvent);
 		startServerManager.getServerListerner().sendInterruptionsToTheRemoteEventListerners();
 	}
 

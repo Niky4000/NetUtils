@@ -1,5 +1,6 @@
 package com.servermanager.observable.threads;
 
+import static com.utils.Logger.println;
 import java.io.File;
 import java.util.HashSet;
 import java.util.Set;
@@ -48,7 +49,7 @@ public class WatchThread extends Thread implements InterruptableThread {
 					consumer.accept(getModifiedFileSet());
 					clearModifiedFileSet();
 				} catch (Exception e) {
-					e.printStackTrace();
+					println(e);
 				}
 			}
 		}

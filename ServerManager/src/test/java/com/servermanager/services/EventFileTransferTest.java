@@ -1,7 +1,7 @@
 package com.servermanager.services;
 
 import com.servermanager.StartServerManager;
-import java.util.function.Consumer;
+import static com.servermanager.test.utils.Utils.th;
 import org.junit.Test;
 
 public class EventFileTransferTest {
@@ -21,23 +21,5 @@ public class EventFileTransferTest {
 		server.join(10 * 1000);
 		Thread client = th(b -> StartServerManager.main(new String[]{"EVENT", "-host", "127.0.0.1", "-port", "4444", "-dir", "/home/me/tmp/shared_dir1", "-instanceName", "firstClient", "-clientPort", "48200", "-portRange", "10"}), "client");
 		server.join();
-	}
-
-	private Thread th(Consumer<Boolean> runnable, String name) {
-		Thread thread = new Thread(() -> {
-			runnable.accept(true);
-			waitForewer();
-		});
-		thread.setName(name);
-		thread.start();
-		return thread;
-	}
-
-	private void waitForewer() {
-		try {
-			Thread.sleep(Integer.MAX_VALUE);
-		} catch (InterruptedException ex) {
-			ex.printStackTrace();
-		}
 	}
 }

@@ -3,6 +3,7 @@ package com.servermanager;
 import com.lib.ConfigHandler;
 import static com.lib.ConfigHandler.getParameter;
 import static com.lib.ConfigHandler.getParameters;
+import com.servermanager.services.ClipboardService;
 import com.servermanager.services.FilesClusterService;
 import com.servermanager.services.DeleteService;
 import com.servermanager.services.DownloadService;
@@ -15,6 +16,8 @@ import com.servermanager.services.UpdateService;
 import com.servermanager.services.UpdateSshService;
 import com.servermanager.services.UploadService;
 import com.servermanager.services.UploadSshService;
+import static com.utils.Logger.println;
+import static com.utils.Logger.setLog;
 import com.utils.WaitUtils;
 import java.io.File;
 import java.io.IOException;
@@ -48,6 +51,7 @@ public class StartServerManager {
 
 	private void argumentsHandler(String[] args, List<List<String>> argList2) {
 		try {
+			setLog(false);
 			new SelfUpdateService().update(args);
 			for (int i = 0; i < argList2.size(); i++) {
 				List<String> argList = argList2.get(i);
@@ -118,8 +122,11 @@ public class StartServerManager {
 						Path to = Paths.get(getParameter("-to", argList));
 						initActionsBeforeCreatingTheListerners(host, port, to, dir, this);
 						createFileSystemListerner(host, port, to, dir, this);
-					} else if(argList.get(0).equals("CLIPBOARD")){
-						
+					} else if (argList.get(0).equals("CLIPBOARD")) {
+						String host = getParameter("-host", argList);
+						Integer port = Integer.valueOf(getParameter("-port", argList));
+						ClipboardService clipboardService = new ClipboardService(host, port, this);
+						clipboardService.createClipboardThread();
 					} else if (argList.get(0).equals("EVENT")) {
 						String host = getParameter("-host", argList);
 						Integer port = Integer.valueOf(getParameter("-port", argList));
@@ -131,6 +138,8 @@ public class StartServerManager {
 						getEventClusterServiceMap().put(home, eventService);
 						eventService.startCluster();
 						eventService.listenToFileEvents();
+					} else if (argList.get(0).equals("LOG")) {
+						setLog(true);
 					} else if (argList.get(0).equals("DEBUG")) {
 						debug();
 						WaitUtils.waitSomeTime(2000);
@@ -145,10 +154,10 @@ public class StartServerManager {
 	}
 
 	private static void debug() throws IOException, InterruptedException {
-		System.out.println("Wrong arguments!");
+		println("Wrong arguments!");
 		WaitUtils.waitSomeTime(20);
 		createTestFile();
-		System.out.println("Wrong arguments!");
+		println("Wrong arguments!");
 	}
 
 	private static void createTestFile() throws IOException {

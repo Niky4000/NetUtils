@@ -7,6 +7,7 @@ import com.servermanager.services.events.Event;
 import com.servermanager.services.events.FileDeleted;
 import com.servermanager.services.events.FileEventKey;
 import com.servermanager.services.events.FileUploaded;
+import static com.utils.Logger.println;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Path;
@@ -85,14 +86,14 @@ public class ObservableFileSystemService {
 					if (file.exists()) {
 						startServerManager.getEventClusterServiceMap().get(dir).getHandledEvents().put(new FileEventKey(file.getName()), new FileUploaded(file, eventDate));
 						new UploadService(host, port, startServerManager).upload(to.resolve(file.getName()), file.toPath(), eventDate);
-						System.out.println("File " + file.getAbsolutePath() + " was sent!");
+						println("File " + file.getAbsolutePath() + " was sent!");
 					} else {
 						startServerManager.getEventClusterServiceMap().get(dir).getHandledEvents().put(new FileEventKey(file.getName()), new FileDeleted(file, eventDate));
 						new DeleteService(host, port, startServerManager).delete(to.resolve(file.getName()), eventDate);
-						System.out.println("File " + file.getAbsolutePath() + " was deleted!");
+						println("File " + file.getAbsolutePath() + " was deleted!");
 					}
 				} catch (Exception e) {
-					e.printStackTrace();
+					println(e);
 				}
 			}
 		}, modificationCounter);

@@ -1,5 +1,6 @@
 package com.utils;
 
+import static com.utils.Logger.println;
 import java.awt.Toolkit;
 import java.awt.datatransfer.DataFlavor;
 import java.awt.datatransfer.FlavorEvent;
@@ -11,20 +12,20 @@ public class ClipboardUtils {
 		Toolkit.getDefaultToolkit().getSystemClipboard().setContents(new StringSelection(string), null);
 	}
 
-	public static void setClipboardListerner() {
+	public static void setClipboardListerner(Thread thread) {
 		Toolkit.getDefaultToolkit().getSystemClipboard().addFlavorListener((FlavorEvent e) -> {
-			String clipboardData = getClipboardData();
+			thread.interrupt();
 		});
 	}
 
 	public static String getClipboardData() {
 		try {
 			String data = (String) Toolkit.getDefaultToolkit().getSystemClipboard().getData(DataFlavor.stringFlavor);
-//				System.out.println("ClipBoard UPDATED: " + e.getSource() + " " + e.toString() + " data: " + data);
-			System.out.println(data);
+//				println("ClipBoard UPDATED: " + e.getSource() + " " + e.toString() + " data: " + data);
+			println(data);
 			return data;
 		} catch (Exception ex) {
-			System.out.println("Exception!");
+			println("Exception!");
 			return "";
 		}
 	}

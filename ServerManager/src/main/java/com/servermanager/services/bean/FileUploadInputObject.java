@@ -2,6 +2,7 @@ package com.servermanager.services.bean;
 
 import com.servermanager.StartServerManager;
 import static com.utils.FileUtils.handleFile;
+import static com.utils.Logger.println;
 import java.io.File;
 import java.util.Date;
 
@@ -51,7 +52,7 @@ public class FileUploadInputObject<T> extends TransferObject<T> {
 				try {
 					startServerManager.getClusterService().fileUploadedEvent(((FileUploadInputObject) object).getFile(), ((FileUploadInputObject) object).getEventDate());
 				} catch (Exception e) {
-					e.printStackTrace();
+					println(e);
 				}
 			}
 		});

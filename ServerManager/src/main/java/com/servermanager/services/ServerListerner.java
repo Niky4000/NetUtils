@@ -3,6 +3,7 @@ package com.servermanager.services;
 import com.servermanager.StartServerManager;
 import com.servermanager.services.bean.EventObject;
 import com.servermanager.services.bean.TransferObject;
+import static com.utils.Logger.println;
 import com.utils.WaitUtils;
 import java.io.EOFException;
 import java.io.IOException;
@@ -55,7 +56,7 @@ public class ServerListerner {
 		while (iterator.hasNext()) {
 			Entry<Socket, ObjectOutputStream> next = iterator.next();
 			try {
-				System.out.println("One socket was closed!");
+				println("One socket was closed!");
 				Socket socket = next.getKey();
 				ObjectOutputStream outputStream = next.getValue();
 				outputStream.writeObject(new EventObject());
@@ -90,7 +91,7 @@ public class ServerListerner {
 				// Ignore it!
 			} catch (Exception e) {
 				if (globalInputObject != null && !(globalInputObject instanceof EventObject)) {
-					e.printStackTrace();
+					println(e);
 				}
 			} finally {
 				if (globalInputObject != null && !(globalInputObject instanceof EventObject)) {

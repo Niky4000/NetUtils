@@ -6,6 +6,7 @@ import com.jcraft.jsch.JSch;
 import com.jcraft.jsch.JSchException;
 import com.jcraft.jsch.Session;
 import com.jcraft.jsch.UserInfo;
+import static com.utils.Logger.println;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
@@ -77,7 +78,7 @@ public class SshClient {
 			}
 
 			if (channel.isClosed()) {
-				//                System.out.println("exit-status: " + channel.getExitStatus());
+				//                println("exit-status: " + channel.getExitStatus());
 				break;
 			}
 		}
@@ -121,7 +122,7 @@ public class SshClient {
 //			}
 //
 //			if (channel.isClosed()) {
-//				//                System.out.println("exit-status: " + channel.getExitStatus());
+//				//                println("exit-status: " + channel.getExitStatus());
 //				break;
 //			}
 //		}
@@ -169,7 +170,7 @@ public class SshClient {
 //			responseData.addAll(copyAvailable(in));
 //			responseErrorData.addAll(copyAvailable(in2));
 //			if (channel.isClosed()) {
-//				//                System.out.println("exit-status: " + channel.getExitStatus());
+//				//                println("exit-status: " + channel.getExitStatus());
 //				break;
 //			}
 //		}
@@ -246,7 +247,7 @@ public class SshClient {
 						break;
 					}
 				}
-				//System.out.println("filesize="+filesize+", file="+file);
+				//println("filesize="+filesize+", file="+file);
 				// send '\0'
 				buf[0] = 0;
 				out.write(buf, 0, 1);
@@ -284,7 +285,7 @@ public class SshClient {
 			session.disconnect();
 			//            System.exit(0);
 		} catch (Exception e) {
-			System.out.println(e);
+			println(e);
 			try {
 				if (fos != null) {
 					fos.close();
@@ -371,7 +372,7 @@ public class SshClient {
 			session.disconnect();
 			//            System.exit(0);
 		} catch (Exception e) {
-			System.out.println(e);
+			println(e);
 			try {
 				if (fis != null) {
 					fis.close();
@@ -420,7 +421,7 @@ public class SshClient {
 		session.setUserInfo(ui);
 		session.connect();
 		int assinged_port = session.setPortForwardingL(lport, rhost, rport);
-		System.out.println("localhost:" + assinged_port + " -> " + rhost + ":" + rport);
+		println("localhost:" + assinged_port + " -> " + rhost + ":" + rport);
 	}
 
 	public void forwardR(int rport, String lhost, int lport) throws JSchException {
@@ -432,7 +433,7 @@ public class SshClient {
 		session.setUserInfo(ui);
 		session.connect();
 		session.setPortForwardingR(rport, lhost, lport);
-		System.out.println(host + ":" + rport + " -> " + lhost + ":" + lport);
+		println(host + ":" + rport + " -> " + lhost + ":" + lport);
 	}
 
 }
