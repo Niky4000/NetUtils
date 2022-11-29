@@ -5,6 +5,7 @@ import java.io.File;
 import java.nio.file.Files;
 import java.nio.file.StandardOpenOption;
 import java.util.Date;
+import java.util.UUID;
 import java.util.stream.IntStream;
 import org.junit.Assert;
 import org.junit.Test;
@@ -38,7 +39,7 @@ public class DownloadServiceTest {
 			});
 			thread.start();
 			DownloadService downloadService = new DownloadService(HOST, PORT, startServerManager);
-			downloadService.download(file.toPath(), file2.toPath(), new Date());
+			downloadService.download(file.toPath(), file2.toPath(), UUID.randomUUID().toString(), new Date());
 			serverListerner.shutdown();
 			Assert.assertTrue(file2.exists() && fileLength.equals(file2.length()));
 		} finally {

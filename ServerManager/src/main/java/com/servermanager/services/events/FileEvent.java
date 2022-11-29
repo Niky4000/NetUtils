@@ -7,8 +7,8 @@ public class FileEvent extends Event {
 
 	private final File file;
 
-	public FileEvent(File file, Date date) {
-		super(date);
+	public FileEvent(File file, String uuid, Date date) {
+		super(uuid, date);
 		this.file = file;
 	}
 

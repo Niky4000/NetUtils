@@ -106,19 +106,17 @@ public class FilesClusterService extends AbstractService {
 		});
 	}
 
-	public void fileUploadedEvent(File file, Date eventDate) {
-//		ignite.<FileEventKey, Event>cache(EVENTS.value()).put(new FileEventKey(file.getName()), new FileUploaded(file));
+	public void fileUploadedEvent(File file, String uuid, Date eventDate) {
 		IgniteCache<FileEventKey, Event> cache = ignite.<FileEventKey, Event>cache(EVENTS.value());
 		cache.remove(new FileEventKey(file.getName()));
-		cache.put(new FileEventKey(file.getName()), new FileUploaded(file, eventDate));
+		cache.put(new FileEventKey(file.getName()), new FileUploaded(file, uuid, eventDate));
 		startServerManager.getServerListerner().sendInterruptionsToTheRemoteEventListerners();
 	}
 
-	public void fileDeletedEvent(File file, Date eventDate) {
-//		ignite.<FileEventKey, Event>cache(EVENTS.value()).put(new FileEventKey(file.getName()), new FileDeleted(file));
+	public void fileDeletedEvent(File file, String uuid, Date eventDate) {
 		IgniteCache<FileEventKey, Event> cache = ignite.<FileEventKey, Event>cache(EVENTS.value());
 		cache.remove(new FileEventKey(file.getName()));
-		cache.put(new FileEventKey(file.getName()), new FileDeleted(file, eventDate));
+		cache.put(new FileEventKey(file.getName()), new FileDeleted(file, uuid, eventDate));
 		startServerManager.getServerListerner().sendInterruptionsToTheRemoteEventListerners();
 	}
 

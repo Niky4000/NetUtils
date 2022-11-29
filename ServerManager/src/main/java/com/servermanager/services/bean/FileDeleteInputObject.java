@@ -9,10 +9,12 @@ import java.util.Optional;
 public class FileDeleteInputObject<T> extends TransferObject<T> {
 
 	private final File file;
+	private final String uuid;
 	private final Date eventDate;
 
-	public FileDeleteInputObject(File file, Date eventDate) {
+	public FileDeleteInputObject(File file, String uuid, Date eventDate) {
 		this.file = file;
+		this.uuid = uuid;
 		this.eventDate = eventDate;
 	}
 
@@ -20,7 +22,7 @@ public class FileDeleteInputObject<T> extends TransferObject<T> {
 	public TransferObject apply(TransferObject<T> object, StartServerManager startServerManager) {
 		file.delete();
 		try {
-			startServerManager.getClusterService().fileDeletedEvent(file, eventDate);
+			startServerManager.getClusterService().fileDeletedEvent(file, uuid, eventDate);
 		} catch (Exception e) {
 			println(e);
 		}

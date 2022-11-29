@@ -19,13 +19,13 @@ public class UploadService extends AbstractService {
 		this.startServerManager = startServerManager;
 	}
 
-	public void upload(Path to, Path from, Date eventDate) throws Exception {
+	public void upload(Path to, Path from, String uuid, Date eventDate) throws Exception {
 		if (from.toFile().isDirectory()) {
-			new ClientService(host, port, startServerManager).sendMessage(Arrays.asList(new DirUploadInputObject<>(to.toFile(), eventDate)).iterator());
+			new ClientService(host, port, startServerManager).sendMessage(Arrays.asList(new DirUploadInputObject<>(to.toFile(), uuid, eventDate)).iterator());
 		} else {
 			try (FileInputStream inputStream = new FileInputStream(from.toFile());) {
-				new ClientService(host, port, startServerManager).sendMessage(Arrays.asList(new FileUploadInputObject<>(to.toFile(), eventDate)).iterator());
-				Iterator<FileUploadInputObject> iterator = FileUtils.getFileUploadInputObjectIterator(to.toFile(), inputStream, eventDate, startServerManager);
+				new ClientService(host, port, startServerManager).sendMessage(Arrays.asList(new FileUploadInputObject<>(to.toFile(), uuid, eventDate)).iterator());
+				Iterator<FileUploadInputObject> iterator = FileUtils.getFileUploadInputObjectIterator(to.toFile(), inputStream, uuid, eventDate, startServerManager);
 				new ClientService(host, port, startServerManager).sendMessage(iterator);
 			}
 		}

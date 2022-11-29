@@ -16,7 +16,7 @@ public class DeleteService extends AbstractService {
 		this.startServerManager = startServerManager;
 	}
 
-	public void delete(Path to, Date eventDate) throws IOException, ClassNotFoundException {
-		new ClientService(host, port, startServerManager).sendMessage(Arrays.asList(new FileDeleteInputObject<>(to.toFile(), eventDate)).iterator());
+	public void delete(Path to, String uuid, Date eventDate) throws IOException, ClassNotFoundException {
+		new ClientService(host, port, startServerManager).sendMessage(Arrays.asList(new FileDeleteInputObject<>(to.toFile(), uuid, eventDate)).iterator());
 	}
 }

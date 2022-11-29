@@ -30,6 +30,7 @@ import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
@@ -81,7 +82,7 @@ public class StartServerManager {
 						Integer port = Integer.valueOf(getParameter("-port", argList));
 						Path to = Paths.get(getParameter("-to", argList));
 						Path from = Paths.get(getParameter("-from", argList));
-						new UploadService(host, port, this).upload(to, from, new Date());
+						new UploadService(host, port, this).upload(to, from, UUID.randomUUID().toString(), new Date());
 					} else if (argList.get(0).equals("SELF_UPDATE")) {
 						new SelfUpdateService().update(args);
 					} else if (argList.get(0).equals("DOWNLOAD")) {
@@ -89,12 +90,12 @@ public class StartServerManager {
 						Integer port = Integer.valueOf(getParameter("-port", argList));
 						Path from = Paths.get(getParameter("-from", argList));
 						Path to = Paths.get(getParameter("-to", argList));
-						new DownloadService(host, port, this).download(from, to, new Date());
+						new DownloadService(host, port, this).download(from, to, UUID.randomUUID().toString(), new Date());
 					} else if (argList.get(0).equals("DELETE")) {
 						String host = getParameter("-host", argList);
 						Integer port = Integer.valueOf(getParameter("-port", argList));
 						Path to = Paths.get(getParameter("-to", argList));
-						new DeleteService(host, port, this).delete(to, new Date());
+						new DeleteService(host, port, this).delete(to, UUID.randomUUID().toString(), new Date());
 					} else if (argList.get(0).equals("UPDATE_SSH")) {
 						String host = getParameter("-host", argList);
 						String user = getParameter("-user", argList);

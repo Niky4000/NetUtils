@@ -6,8 +6,8 @@ import java.util.Date;
 
 public class DirUploadInputObject<T> extends FileUploadInputObject<T> {
 
-	public DirUploadInputObject(File file, Date eventDate) {
-		super(file, eventDate);
+	public DirUploadInputObject(File file, String uuid, Date eventDate) {
+		super(file, uuid, eventDate);
 	}
 
 	@Override

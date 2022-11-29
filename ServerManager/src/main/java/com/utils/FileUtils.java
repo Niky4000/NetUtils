@@ -58,7 +58,7 @@ public class FileUtils {
 		}
 	}
 
-	public static Iterator<FileUploadInputObject> getFileUploadInputObjectIterator(File file, FileInputStream inputStream, Date eventDate, StartServerManager startServerManager) {
+	public static Iterator<FileUploadInputObject> getFileUploadInputObjectIterator(File file, FileInputStream inputStream, String uuid, Date eventDate, StartServerManager startServerManager) {
 		AtomicBoolean finished = new AtomicBoolean(false);
 		Iterator<FileUploadInputObject> iterator = new Iterator<FileUploadInputObject>() {
 			@Override
@@ -77,12 +77,12 @@ public class FileUtils {
 						if (read < buffer_size) {
 							byte[] buffer2 = new byte[read];
 							System.arraycopy(buffer, 0, buffer2, 0, read);
-							return new FileUploadInputObject<Object>(file, buffer2, eventDate);
+							return new FileUploadInputObject<Object>(file, buffer2, uuid, eventDate);
 						} else {
-							return new FileUploadInputObject<Object>(file, buffer, eventDate);
+							return new FileUploadInputObject<Object>(file, buffer, uuid, eventDate);
 						}
 					}
-					return new FileUploadInputObject<>(eventDate);
+					return new FileUploadInputObject<>(uuid, eventDate);
 				} catch (Exception e) {
 					throw new RuntimeException(e);
 				}
