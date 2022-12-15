@@ -15,10 +15,10 @@ public class DownloadService extends AbstractService {
 		this.startServerManager = startServerManager;
 	}
 
-	public void download(Path from, Path to, String uuid, Date eventDate) throws Exception {
+	public void download(Path from, Path to, Date eventDate) throws Exception {
 		if (to.toFile().exists()) {
 			to.toFile().delete();
 		}
-		new ClientService(host, port, startServerManager).sendMessage(Arrays.asList(new FileDownloadOutputObject<>(from.toFile(), to.toFile(), uuid, eventDate)).iterator());
+		new ClientService(host, port, startServerManager).sendMessage(Arrays.asList(new FileDownloadOutputObject<>(from.toFile(), to.toFile(), eventDate)).iterator());
 	}
 }

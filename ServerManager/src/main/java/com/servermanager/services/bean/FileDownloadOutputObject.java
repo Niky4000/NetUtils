@@ -15,22 +15,19 @@ public class FileDownloadOutputObject<T> extends TransferObject<T> {
 	private final File to;
 	private FileInputStream inputStream;
 	private Iterator<FileUploadInputObject> iterator;
-	private final String uuid;
 	private final Date eventDate;
 
-	public FileDownloadOutputObject(String uuid, Date eventDate) {
+	public FileDownloadOutputObject(Date eventDate) {
 		super();
 		this.from = null;
 		this.to = null;
-		this.uuid = uuid;
 		this.eventDate = eventDate;
 	}
 
-	public FileDownloadOutputObject(File from, File to, String uuid, Date eventDate) {
+	public FileDownloadOutputObject(File from, File to, Date eventDate) {
 		this.from = from;
 		this.to = to;
 		this.deadPill = false;
-		this.uuid = uuid;
 		this.eventDate = eventDate;
 	}
 
@@ -38,17 +35,17 @@ public class FileDownloadOutputObject<T> extends TransferObject<T> {
 	public TransferObject apply(TransferObject<T> object, StartServerManager startServerManager) {
 		if (object == null) {
 			if (!from.exists()) {
-				return new FileUploadInputObject(uuid, eventDate);
+				return new FileUploadInputObject(eventDate);
 			}
 			if (from.isDirectory()) {
-				return new FileUploadInputObject(uuid, eventDate);
+				return new FileUploadInputObject(eventDate);
 			}
 			if (from.exists() && from.length() == 0L) {
-				return new FileUploadInputObject<Object>(to, new byte[]{}, uuid, eventDate).setDeadPill(true);
+				return new FileUploadInputObject<Object>(to, new byte[]{}, eventDate).setDeadPill(true);
 			}
 			try {
 				inputStream = new FileInputStream(from);
-				iterator = FileUtils.getFileUploadInputObjectIterator(to, inputStream, uuid, eventDate, startServerManager);
+				iterator = FileUtils.getFileUploadInputObjectIterator(to, inputStream, eventDate, startServerManager);
 			} catch (Exception e) {
 				throw new RuntimeException(e);
 			}
@@ -61,7 +58,7 @@ public class FileDownloadOutputObject<T> extends TransferObject<T> {
 			return next;
 		} else {
 			finish();
-			return new FileUploadInputObject(uuid, eventDate);
+			return new FileUploadInputObject(eventDate);
 		}
 	}
 

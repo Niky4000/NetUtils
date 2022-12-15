@@ -18,7 +18,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
@@ -48,13 +47,13 @@ public class ObservableFileSystemService {
 		if (!remoteFileMapWithoutLocalFiles.isEmpty()) {
 			DownloadService downloadService = new DownloadService(host, port, startServerManager);
 			for (File file : remoteFileMapWithoutLocalFiles.values()) {
-				downloadService.download(file.toPath(), dir.toPath().resolve(file.getName()), UUID.randomUUID().toString(), new Date());
+				downloadService.download(file.toPath(), dir.toPath().resolve(file.getName()), new Date());
 			}
 		}
 		if (!localFileMapWithoutRemoteFiles.isEmpty()) {
 			UploadService uploadService = new UploadService(host, port, startServerManager);
 			for (File file : localFileMapWithoutRemoteFiles.values()) {
-				uploadService.upload(to.resolve(file.getName()), file.toPath(), UUID.randomUUID().toString(), new Date());
+				uploadService.upload(to.resolve(file.getName()), file.toPath(), new Date());
 			}
 		}
 	}
@@ -85,14 +84,12 @@ public class ObservableFileSystemService {
 					}
 					Date eventDate = new Date();
 					if (file.exists()) {
-						FileUploaded fileUploaded = new FileUploaded(file, eventDate);
-						startServerManager.getEventClusterServiceMap().get(dir).getHandledEvents().put(new FileEventKey(file.getName()), fileUploaded);
-						new UploadService(host, port, startServerManager).upload(to.resolve(file.getName()), file.toPath(), fileUploaded.getUuid(), eventDate);
+						startServerManager.getEventClusterServiceMap().get(dir).getHandledEvents().put(new FileEventKey(file.getName()), new FileUploaded(file, eventDate));
+						new UploadService(host, port, startServerManager).upload(to.resolve(file.getName()), file.toPath(), eventDate);
 						println("File " + file.getAbsolutePath() + " was sent!");
 					} else {
-						FileDeleted fileDeleted = new FileDeleted(file, eventDate);
-						startServerManager.getEventClusterServiceMap().get(dir).getHandledEvents().put(new FileEventKey(file.getName()), fileDeleted);
-						new DeleteService(host, port, startServerManager).delete(to.resolve(file.getName()), fileDeleted.getUuid(), eventDate);
+						startServerManager.getEventClusterServiceMap().get(dir).getHandledEvents().put(new FileEventKey(file.getName()), new FileDeleted(file, eventDate));
+						new DeleteService(host, port, startServerManager).delete(to.resolve(file.getName()), eventDate);
 						println("File " + file.getAbsolutePath() + " was deleted!");
 					}
 				} catch (Exception e) {

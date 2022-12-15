@@ -26,7 +26,6 @@ import org.apache.ignite.cache.query.ScanQuery;
 import org.apache.ignite.client.IgniteClient;
 import org.apache.ignite.configuration.ClientConfiguration;
 import static com.utils.Logger.println;
-import java.util.UUID;
 
 public class EventClusterService {
 
@@ -57,70 +56,66 @@ public class EventClusterService {
 
 	public void listenToFileEvents() {
 		createEventThread(Thread.currentThread());
-		Thread eventLoopThread = new Thread(() -> {
-			while (true) {
-				try {
-					int eventCounter = 0;
-					println(Thread.currentThread().getName() + " is going to check server events!");
-					Iterator<Cache.Entry<FileEventKey, Event>> iterator = ignite.<FileEventKey, Event>cache(EVENTS.value()).query(new ScanQuery<FileEventKey, Event>((date, event) -> event instanceof Event)).iterator();
+		while (true) {
+			try {
+				int eventCounter = 0;
+				println(Thread.currentThread().getName() + " is going to check server events!");
+				Iterator<Cache.Entry<FileEventKey, Event>> iterator = ignite.<FileEventKey, Event>cache(EVENTS.value()).query(new ScanQuery<FileEventKey, Event>((date, event) -> event instanceof Event)).iterator();
 //				Iterator<Cache.Entry<FileEventKey, Event>> iterator = ignite.<FileEventKey, Event>cache(EVENTS.value()).query(new ScanQuery<FileEventKey, Event>()).iterator();
-					while (iterator.hasNext()) {
-						eventCounter++;
-						Cache.Entry<FileEventKey, Event> next = iterator.next();
-						FileEventKey key = next.getKey();
-						Event event = (Event) next.getValue();
-						if (Optional.ofNullable(getHandledEvents().asMap().get(key)).map(fileEvent -> {
-							String fileEventUuid = event.getUuid();
-							boolean b = fileEvent.getUuid().equals(fileEventUuid);
-							if (!b) {
-								println("File: " + key.getName() + " date: " + fileEvent.getDate() + " eventDate: " + event.getDate() + "!");
-							}
-							return b;
-						}).orElse(false)) {
-							continue;
+				while (iterator.hasNext()) {
+					eventCounter++;
+					Cache.Entry<FileEventKey, Event> next = iterator.next();
+					FileEventKey key = next.getKey();
+					Event event = (Event) next.getValue();
+					if (Optional.ofNullable(getHandledEvents().asMap().get(key)).map(Event::getDate).map(date -> {
+						Date fileEventDate = event.getDate();
+						boolean b = date.equals(fileEventDate);
+						if (!b) {
+							println("File: " + key.getName() + " date: " + date + " eventDate: " + fileEventDate + "!");
 						}
-						if (event instanceof FileUploaded) {
-							try {
-								Event oldEvent = getHandledEvents().getIfPresent(key);
-								if (oldEvent == null || !oldEvent.getUuid().equals(event.getUuid())) {
-									Date now = new Date();
-									getHandledEvents().put(key, new Event(event.getUuid(), now));
-									new DownloadService(host, port, startServerManager).download(((FileEvent) event).getFile().toPath(), home.toPath().resolve(((FileEvent) event).getFile().getName()), event.getUuid(), now);
-									println("File event: " + home.toPath().resolve(((FileEvent) event).getFile().getName()).toFile().getAbsolutePath() + " was downloaded!");
-								}
-							} catch (Exception e) {
-								println(e);
-							}
-						} else if (event instanceof FileDeleted) {
+						return b;
+					}).orElse(false)) {
+						continue;
+					}
+					if (event instanceof FileUploaded) {
+						try {
 							Event oldEvent = getHandledEvents().getIfPresent(key);
-							File fileToDelete = home.toPath().resolve(((FileEvent) event).getFile().getName()).toFile();
-							if (fileToDelete.exists() && (oldEvent == null || !oldEvent.getUuid().equals(event.getUuid()))) {
-								getHandledEvents().put(key, event);
-								fileToDelete.delete();
-								println("File event: " + fileToDelete.getAbsolutePath() + " was deleted!");
+							if (oldEvent == null || oldEvent.getDate().before(event.getDate()) || oldEvent.getDate().equals(event.getDate())) {
+								Date now = new Date();
+								getHandledEvents().put(key, new Event(now));
+								new DownloadService(host, port, startServerManager).download(((FileEvent) event).getFile().toPath(), home.toPath().resolve(((FileEvent) event).getFile().getName()), now);
+								println("File event: " + home.toPath().resolve(((FileEvent) event).getFile().getName()).toFile().getAbsolutePath() + " was downloaded!");
 							}
-						} else if (event instanceof ClipboardEvent) {
-							Event oldEvent = getHandledEvents().getIfPresent(key);
-							if (oldEvent == null || !oldEvent.getUuid().equals(event.getUuid())) {
-								getHandledEvents().put(key, event);
-								ClipboardUtils.setClipboard(((ClipboardEvent) event).getClipboardData());
-								println("ClipboardEvent event: " + ((ClipboardEvent) event).getClipboardData() + " was handled!");
-							}
+						} catch (Exception e) {
+							println(e);
+						}
+					} else if (event instanceof FileDeleted) {
+						Event oldEvent = getHandledEvents().getIfPresent(key);
+						File fileToDelete = home.toPath().resolve(((FileEvent) event).getFile().getName()).toFile();
+						if (fileToDelete.exists() && (oldEvent == null || oldEvent.getDate().before(event.getDate()) || oldEvent.getDate().equals(event.getDate()))) {
+							getHandledEvents().put(key, event);
+							fileToDelete.delete();
+							println("File event: " + fileToDelete.getAbsolutePath() + " was deleted!");
+						}
+					} else if (event instanceof ClipboardEvent) {
+						Event oldEvent = getHandledEvents().getIfPresent(key);
+						if (oldEvent == null || oldEvent.getDate().before(event.getDate()) || oldEvent.getDate().equals(event.getDate())) {
+							getHandledEvents().put(key, event);
+							ClipboardUtils.setClipboard(((ClipboardEvent) event).getClipboardData());
+							println("ClipboardEvent event: " + ((ClipboardEvent) event).getClipboardData() + " was handled!");
 						}
 					}
+				}
 //				if (eventCounter == 0) {
 //					println("No events happened!");
 //				}
-					eventCounter = 0;
-					wait10Seconds();
-				} catch (Exception e) {
-					println(e);
-					wait10Seconds();
-				}
+				eventCounter = 0;
+				wait10Seconds();
+			} catch (Exception e) {
+				println(e);
+				wait10Seconds();
 			}
-		});
-		eventLoopThread.setName("eventLoopThread");
-		eventLoopThread.start();
+		}
 	}
 
 	private void createEventThread(Thread threadToInterrupt) {
@@ -150,6 +145,7 @@ public class EventClusterService {
 		try {
 			Thread.sleep(10 * 1000);
 		} catch (InterruptedException ex) {
+//			Logger.getLogger(EventClusterService.class.getName()).log(Level.SEVERE, null, ex);
 			println(Thread.currentThread().getName() + " was interrupted!");
 		}
 	}
@@ -158,6 +154,7 @@ public class EventClusterService {
 		try {
 			Thread.sleep(200 * 1000);
 		} catch (InterruptedException ex) {
+//			Logger.getLogger(EventClusterService.class.getName()).log(Level.SEVERE, null, ex);
 			println(Thread.currentThread().getName() + " was interrupted!");
 		}
 	}

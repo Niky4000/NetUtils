@@ -9,7 +9,6 @@ import java.io.File;
 import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.Date;
-import java.util.UUID;
 
 public class UpdateService extends AbstractService {
 
@@ -35,7 +34,7 @@ public class UpdateService extends AbstractService {
 					String selfMd5Sum = FileUtils.getMd5Sum(pathToJar.toFile());
 					if (!md5Sum.equals(selfMd5Sum)) {
 						Path to = pathToJar.getParent().resolve(addUpdateMarkToFileName(from.getName()));
-						new DownloadService(host, port, startServerManager).download(from.toPath(), to, UUID.randomUUID().toString(), new Date());
+						new DownloadService(host, port, startServerManager).download(from.toPath(), to, new Date());
 						String downloadedMd5Sum = FileUtils.getMd5Sum(to.toFile());
 						launchSelf(args, to);
 						System.exit(0);
