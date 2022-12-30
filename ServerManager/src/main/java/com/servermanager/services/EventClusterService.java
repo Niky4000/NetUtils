@@ -85,7 +85,7 @@ public class EventClusterService {
 						try {
 							Event oldEvent = getHandledEvents().getIfPresent(key);
 							if (oldEvent == null || oldEvent.getDate().before(event.getDate()) || oldEvent.getDate().equals(event.getDate())) {
-								Date now = new Date();
+								Date now = event.getDate();
 								getHandledEvents().put(key, new Event(now));
 								Path to = home.toPath().resolve(((FileEvent) event).getFile().getName());
 								startServerManager.getDownloadedFiles().put(to.toFile().getAbsolutePath(), nullDate);
