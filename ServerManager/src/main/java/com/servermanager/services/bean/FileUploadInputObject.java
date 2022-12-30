@@ -58,7 +58,7 @@ public class FileUploadInputObject<T> extends TransferObject<T> {
 				}
 			}
 		});
-		if (file.exists()) {
+		if (file != null && file.exists()) {
 			try {
 				Files.setLastModifiedTime(file.toPath(), FileTime.fromMillis(eventDate.getTime()));
 			} catch (Exception e) {
