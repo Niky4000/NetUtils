@@ -10,7 +10,7 @@ import java.lang.management.ManagementFactory;
 import java.nio.file.Files;
 import java.nio.file.OpenOption;
 import java.nio.file.Path;
-import static java.nio.file.StandardOpenOption.APPEND;
+import static java.nio.file.StandardOpenOption.TRUNCATE_EXISTING;
 import static java.nio.file.StandardOpenOption.CREATE_NEW;
 import java.security.MessageDigest;
 import java.util.Arrays;
@@ -34,7 +34,7 @@ public class FileUtils {
 						openOption = CREATE_NEW;
 						file.delete();
 					} else {
-						openOption = APPEND;
+						openOption = TRUNCATE_EXISTING;
 					}
 				} else {
 					openOption = CREATE_NEW;
