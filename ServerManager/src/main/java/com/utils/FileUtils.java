@@ -1,6 +1,7 @@
 package com.utils;
 
 import com.servermanager.StartServerManager;
+import static com.servermanager.observable.threads.FileSystemObserverThread.nullDate;
 import com.servermanager.services.UpdateSshService;
 import com.servermanager.services.bean.FileUploadInputObject;
 import java.io.File;
@@ -12,12 +13,14 @@ import java.nio.file.OpenOption;
 import java.nio.file.Path;
 import static java.nio.file.StandardOpenOption.TRUNCATE_EXISTING;
 import static java.nio.file.StandardOpenOption.CREATE_NEW;
+import java.nio.file.attribute.BasicFileAttributes;
 import java.security.MessageDigest;
 import java.util.Arrays;
 import java.util.Date;
 import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import java.util.stream.Stream;
 
@@ -147,5 +150,25 @@ public class FileUtils {
 		String exec = "java" + commandLineOptions + " -jar " + to.toFile().getAbsolutePath() + commandLineArguments;
 		Process process = Runtime.getRuntime().exec(exec);
 		return process;
+	}
+
+	public static AtomicBoolean getFileCondition(StartServerManager startServerManager1, File file, AtomicReference<Date> lastModifiedTime) {
+		AtomicBoolean conditon = new AtomicBoolean(false);
+		startServerManager1.getDownloadedFiles().asMap().computeIfPresent(file.getAbsolutePath(), (path, date) -> {
+			if (lastModifiedTime.get() != null && !lastModifiedTime.get().after(date)) {
+				conditon.set(true);
+			}
+			return date;
+		});
+		return conditon;
+	}
+
+	public static AtomicReference<Date> getLastModifiedTime(File file) throws IOException {
+		AtomicReference<Date> lastModifiedTime = new AtomicReference<>();
+		if (file.exists()) {
+			BasicFileAttributes attributes = Files.readAttributes(file.toPath(), BasicFileAttributes.class);
+			lastModifiedTime.set(new Date(attributes.lastModifiedTime().toMillis()));
+		}
+		return lastModifiedTime;
 	}
 }

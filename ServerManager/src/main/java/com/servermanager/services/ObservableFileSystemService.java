@@ -7,6 +7,8 @@ import com.servermanager.services.events.Event;
 import com.servermanager.services.events.FileDeleted;
 import com.servermanager.services.events.FileEventKey;
 import com.servermanager.services.events.FileUploaded;
+import static com.utils.FileUtils.getFileCondition;
+import static com.utils.FileUtils.getLastModifiedTime;
 import static com.utils.Logger.println;
 import java.io.File;
 import java.io.IOException;
@@ -80,25 +82,15 @@ public class ObservableFileSystemService {
 		WatchThread watchThread = new WatchThread(threadIndex, modifiedFileSet -> {
 			for (File file : modifiedFileSet) {
 				try {
-					AtomicReference<Date> lastModifiedTime = new AtomicReference<>();
-					if (file.exists()) {
-						BasicFileAttributes attributes = Files.readAttributes(file.toPath(), BasicFileAttributes.class);
-						lastModifiedTime.set(new Date(attributes.lastModifiedTime().toMillis()));
-					}
-					AtomicBoolean conditon = new AtomicBoolean(false);
-					startServerManager.getDownloadedFiles().asMap().computeIfPresent(file.getAbsolutePath(), (path, date) -> {
-						if (lastModifiedTime.get() != null && !lastModifiedTime.get().after(date)) {
-							conditon.set(true);
-						}
-						return date;
-					});
+					AtomicReference<Date> lastModifiedTime = getLastModifiedTime(file);
+					AtomicBoolean conditon = getFileCondition(startServerManager, file, lastModifiedTime);
 					if (conditon.get() || Optional.ofNullable(startServerManager.getEventClusterServiceMap().get(dir)).map(eventService -> eventService.getHandledEvents()).map(cache -> {
 						Event event = cache.asMap().get(new FileEventKey(file.getName()));
 						return event != null && Long.valueOf((event.getDate().getTime() / 1000) * 1000).equals(file.lastModified());
 					}).orElse(false)) {
 						continue;
 					}
-					Date eventDate = new Date();
+					Date eventDate = lastModifiedTime.get() != null ? lastModifiedTime.get() : new Date();
 					if (file.exists()) {
 						startServerManager.getEventClusterServiceMap().get(dir).getHandledEvents().put(new FileEventKey(file.getName()), new FileUploaded(file, eventDate));
 						new UploadService(host, port, startServerManager).upload(to.resolve(file.getName()), file.toPath(), eventDate);

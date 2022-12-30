@@ -1,6 +1,8 @@
 package com.servermanager.observable.threads;
 
 import com.servermanager.StartServerManager;
+import static com.utils.FileUtils.getFileCondition;
+import static com.utils.FileUtils.getLastModifiedTime;
 import static com.utils.Logger.println;
 import java.io.File;
 import java.io.IOException;
@@ -56,18 +58,8 @@ public class FileSystemObserverThread extends Thread implements InterruptableThr
 								continue;
 							}
 							File modifiedFile = new File(dir.getAbsolutePath() + s + file.getName());
-							AtomicReference<Date> lastModifiedTime = new AtomicReference<>();
-							if (modifiedFile.exists()) {
-								BasicFileAttributes attributes = Files.readAttributes(modifiedFile.toPath(), BasicFileAttributes.class);
-								lastModifiedTime.set(new Date(attributes.lastModifiedTime().toMillis()));
-							}
-							AtomicBoolean conditon = new AtomicBoolean(false);
-							startServerManager.getDownloadedFiles().asMap().computeIfPresent(modifiedFile.getAbsolutePath(), (path, date) -> {
-								if (lastModifiedTime.get() != null && !lastModifiedTime.get().after(date)) {
-									conditon.set(true);
-								}
-								return date;
-							});
+							AtomicReference<Date> lastModifiedTime = getLastModifiedTime(file);
+							AtomicBoolean conditon = getFileCondition(startServerManager, file, lastModifiedTime);
 							if (conditon.get()) {
 								println(modifiedFile.getAbsolutePath() + " is downloading at the moment!");
 								continue;
