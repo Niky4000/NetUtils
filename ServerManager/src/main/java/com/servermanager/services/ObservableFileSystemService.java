@@ -10,7 +10,9 @@ import com.servermanager.services.events.FileUploaded;
 import static com.utils.Logger.println;
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.attribute.BasicFileAttributes;
 import java.util.Arrays;
 import java.util.Date;
 import java.util.HashMap;
@@ -18,7 +20,9 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 
 public class ObservableFileSystemService {
@@ -76,7 +80,19 @@ public class ObservableFileSystemService {
 		WatchThread watchThread = new WatchThread(threadIndex, modifiedFileSet -> {
 			for (File file : modifiedFileSet) {
 				try {
-					if (Optional.ofNullable(startServerManager.getEventClusterServiceMap().get(dir)).map(eventService -> eventService.getHandledEvents()).map(cache -> {
+					AtomicReference<Date> lastModifiedTime = new AtomicReference<>();
+					if (file.exists()) {
+						BasicFileAttributes attributes = Files.readAttributes(file.toPath(), BasicFileAttributes.class);
+						lastModifiedTime.set(new Date(attributes.lastModifiedTime().toMillis()));
+					}
+					AtomicBoolean conditon = new AtomicBoolean(false);
+					startServerManager.getDownloadedFiles().asMap().computeIfPresent(file.getAbsolutePath(), (path, date) -> {
+						if (lastModifiedTime.get() != null && !lastModifiedTime.get().after(date)) {
+							conditon.set(true);
+						}
+						return date;
+					});
+					if (conditon.get() || Optional.ofNullable(startServerManager.getEventClusterServiceMap().get(dir)).map(eventService -> eventService.getHandledEvents()).map(cache -> {
 						Event event = cache.asMap().get(new FileEventKey(file.getName()));
 						return event != null && Long.valueOf((event.getDate().getTime() / 1000) * 1000).equals(file.lastModified());
 					}).orElse(false)) {
