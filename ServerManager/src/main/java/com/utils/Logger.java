@@ -22,6 +22,13 @@ public class Logger {
 		}
 	}
 
+	public static void println(String message, Exception e) {
+		if (log) {
+			System.out.println(message);
+			e.printStackTrace();
+		}
+	}
+
 	public static void setLog(boolean log) {
 		Logger.log = log;
 	}

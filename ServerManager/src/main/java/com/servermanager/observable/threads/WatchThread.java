@@ -6,11 +6,8 @@ import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
-import java.util.logging.Logger;
 
 public class WatchThread extends Thread implements InterruptableThread {
-
-	private static final Logger logger = Logger.getLogger(WatchThread.class.getName());
 
 	private final Consumer<Set<File>> consumer;
 	private final AtomicInteger modificationCounter;

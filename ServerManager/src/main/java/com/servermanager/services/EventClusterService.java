@@ -3,6 +3,7 @@ package com.servermanager.services;
 import com.github.benmanes.caffeine.cache.Caffeine;
 import com.servermanager.StartServerManager;
 import static com.servermanager.caches.CacheNames.EVENTS;
+import static com.servermanager.observable.threads.FileSystemObserverThread.nullDate;
 import static com.servermanager.services.FilesClusterService.EVENT_TIME_TO_LIVE;
 import com.servermanager.services.bean.EventObject;
 import com.servermanager.services.events.ClipboardEvent;
@@ -26,6 +27,9 @@ import org.apache.ignite.cache.query.ScanQuery;
 import org.apache.ignite.client.IgniteClient;
 import org.apache.ignite.configuration.ClientConfiguration;
 import static com.utils.Logger.println;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.attribute.BasicFileAttributes;
 
 public class EventClusterService {
 
@@ -83,7 +87,12 @@ public class EventClusterService {
 							if (oldEvent == null || oldEvent.getDate().before(event.getDate()) || oldEvent.getDate().equals(event.getDate())) {
 								Date now = new Date();
 								getHandledEvents().put(key, new Event(now));
-								new DownloadService(host, port, startServerManager).download(((FileEvent) event).getFile().toPath(), home.toPath().resolve(((FileEvent) event).getFile().getName()), now);
+								Path to = home.toPath().resolve(((FileEvent) event).getFile().getName());
+								startServerManager.getDownloadedFiles().put(to.toFile().getAbsolutePath(), nullDate);
+								new DownloadService(host, port, startServerManager).download(((FileEvent) event).getFile().toPath(), to, now);
+								BasicFileAttributes attributes = Files.readAttributes(to, BasicFileAttributes.class);
+								Date lastModifiedTime = new Date(attributes.lastModifiedTime().toMillis());
+								startServerManager.getDownloadedFiles().put(to.toFile().getAbsolutePath(), lastModifiedTime);
 								println("File event: " + home.toPath().resolve(((FileEvent) event).getFile().getName()).toFile().getAbsolutePath() + " was downloaded!");
 							}
 						} catch (Exception e) {
@@ -131,6 +140,7 @@ public class EventClusterService {
 					println(readObject);
 				} catch (Exception ex) {
 //					ex.printStackTrace();
+					println("eventThread exception!", ex);
 					wait10Seconds();
 				} finally {
 					threadToInterrupt.interrupt();

@@ -98,7 +98,7 @@ public class ObservableFileSystemService {
 			}
 		}, modificationCounter);
 		watchThread.start();
-		FileSystemObserverThread fileSystemObserverThread = new FileSystemObserverThread(threadIndex, dir, watchThread, modificationCounter);
+		FileSystemObserverThread fileSystemObserverThread = new FileSystemObserverThread(threadIndex, dir, watchThread, modificationCounter, startServerManager);
 		fileSystemObserverThread.start();
 	}
 }

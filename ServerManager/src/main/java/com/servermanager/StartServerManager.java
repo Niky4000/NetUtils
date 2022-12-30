@@ -1,5 +1,6 @@
 package com.servermanager;
 
+import com.github.benmanes.caffeine.cache.Caffeine;
 import com.lib.ConfigHandler;
 import static com.lib.ConfigHandler.getParameter;
 import static com.lib.ConfigHandler.getParameters;
@@ -8,6 +9,7 @@ import com.servermanager.services.FilesClusterService;
 import com.servermanager.services.DeleteService;
 import com.servermanager.services.DownloadService;
 import com.servermanager.services.EventClusterService;
+import static com.servermanager.services.FilesClusterService.EVENT_TIME_TO_LIVE;
 import static com.servermanager.services.ObservableFileSystemService.createFileSystemListerner;
 import static com.servermanager.services.ObservableFileSystemService.initActionsBeforeCreatingTheListerners;
 import com.servermanager.services.SelfUpdateService;
@@ -16,6 +18,8 @@ import com.servermanager.services.UpdateService;
 import com.servermanager.services.UpdateSshService;
 import com.servermanager.services.UploadService;
 import com.servermanager.services.UploadSshService;
+import com.servermanager.services.events.Event;
+import com.servermanager.services.events.FileEventKey;
 import static com.utils.Logger.println;
 import static com.utils.Logger.setLog;
 import com.utils.WaitUtils;
@@ -32,6 +36,8 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.CopyOnWriteArraySet;
+import java.util.concurrent.TimeUnit;
 
 public class StartServerManager {
 
@@ -40,6 +46,8 @@ public class StartServerManager {
 	private FilesClusterService clusterService;
 	private ServerListerner serverListerner;
 	private ConcurrentMap<File, EventClusterService> eventClusterServiceMap = new ConcurrentHashMap<>();
+	public static final int EVENT_TIME_TO_LIVE = 30;
+	private final com.github.benmanes.caffeine.cache.Cache<String, Date> downloadedFiles = Caffeine.<String, Date>newBuilder().expireAfterWrite(EVENT_TIME_TO_LIVE, TimeUnit.SECONDS).build();
 
 	public static void main(String[] args) {
 		try {
@@ -178,5 +186,9 @@ public class StartServerManager {
 
 	public ServerListerner getServerListerner() {
 		return serverListerner;
+	}
+
+	public com.github.benmanes.caffeine.cache.Cache<String, Date> getDownloadedFiles() {
+		return downloadedFiles;
 	}
 }
