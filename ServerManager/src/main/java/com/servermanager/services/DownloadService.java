@@ -16,9 +16,6 @@ public class DownloadService extends AbstractService {
 	}
 
 	public void download(Path from, Path to, Date eventDate) throws Exception {
-		if (to.toFile().exists()) {
-			to.toFile().delete();
-		}
 		new ClientService(host, port, startServerManager).sendMessage(Arrays.asList(new FileDownloadOutputObject<>(from.toFile(), to.toFile(), eventDate)).iterator());
 	}
 }
