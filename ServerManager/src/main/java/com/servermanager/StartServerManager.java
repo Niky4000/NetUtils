@@ -9,7 +9,6 @@ import com.servermanager.services.FilesClusterService;
 import com.servermanager.services.DeleteService;
 import com.servermanager.services.DownloadService;
 import com.servermanager.services.EventClusterService;
-import static com.servermanager.services.FilesClusterService.EVENT_TIME_TO_LIVE;
 import static com.servermanager.services.ObservableFileSystemService.createFileSystemListerner;
 import static com.servermanager.services.ObservableFileSystemService.initActionsBeforeCreatingTheListerners;
 import com.servermanager.services.SelfUpdateService;
@@ -18,8 +17,6 @@ import com.servermanager.services.UpdateService;
 import com.servermanager.services.UpdateSshService;
 import com.servermanager.services.UploadService;
 import com.servermanager.services.UploadSshService;
-import com.servermanager.services.events.Event;
-import com.servermanager.services.events.FileEventKey;
 import static com.utils.Logger.println;
 import static com.utils.Logger.setLog;
 import com.utils.WaitUtils;
@@ -36,7 +33,6 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.CopyOnWriteArraySet;
 import java.util.concurrent.TimeUnit;
 
 public class StartServerManager {
