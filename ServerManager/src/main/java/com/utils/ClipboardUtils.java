@@ -21,7 +21,6 @@ public class ClipboardUtils {
 	public static String getClipboardData() {
 		try {
 			String data = (String) Toolkit.getDefaultToolkit().getSystemClipboard().getData(DataFlavor.stringFlavor);
-			println("ClipBoard was updated! Data: " + data);
 			return data;
 		} catch (Exception ex) {
 			println("Exception!");
