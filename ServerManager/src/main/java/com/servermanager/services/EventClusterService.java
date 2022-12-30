@@ -90,9 +90,11 @@ public class EventClusterService {
 								Path to = home.toPath().resolve(((FileEvent) event).getFile().getName());
 								startServerManager.getDownloadedFiles().put(to.toFile().getAbsolutePath(), nullDate);
 								new DownloadService(host, port, startServerManager).download(((FileEvent) event).getFile().toPath(), to, now);
-								BasicFileAttributes attributes = Files.readAttributes(to, BasicFileAttributes.class);
-								Date lastModifiedTime = new Date(attributes.lastModifiedTime().toMillis());
-								startServerManager.getDownloadedFiles().put(to.toFile().getAbsolutePath(), lastModifiedTime);
+								if (to.toFile().exists()) {
+									BasicFileAttributes attributes = Files.readAttributes(to, BasicFileAttributes.class);
+									Date lastModifiedTime = new Date(attributes.lastModifiedTime().toMillis());
+									startServerManager.getDownloadedFiles().put(to.toFile().getAbsolutePath(), lastModifiedTime);
+								}
 								println("File event: " + home.toPath().resolve(((FileEvent) event).getFile().getName()).toFile().getAbsolutePath() + " was downloaded!");
 							}
 						} catch (Exception e) {
