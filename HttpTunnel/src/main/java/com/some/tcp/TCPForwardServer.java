@@ -8,6 +8,7 @@ package com.some.tcp;
 import com.httptunneling.TunnelStart;
 import static com.httptunneling.TunnelStart.addOpenedPort;
 import static com.httptunneling.TunnelStart.isEverythingInterrupted;
+import static com.httptunneling.utils.NetUtils.handleError;
 import static com.utils.Utils.fireWall;
 import java.io.*;
 import java.net.*;
@@ -37,18 +38,24 @@ public class TCPForwardServer {
 			ServerSocket serverSocket = new ServerSocket(sourcePort);
 			addOpenedPort(sourcePort, serverSocket);
 			while (!isEverythingInterrupted()) {
-				Socket clientSocket = serverSocket.accept();
-				if (fireWall(sourcePort, clientSocket, filterMap)) {
-					clientSocket.close();
-					continue;
+				try {
+					Socket clientSocket = serverSocket.accept();
+					if (fireWall(sourcePort, clientSocket, filterMap)) {
+						clientSocket.close();
+						continue;
+					}
+					// Connect to the destination server 
+					Socket mServerSocket = new Socket(destinationHost, destinationPort);
+					// Turn on keep-alive for both the sockets 
+					mServerSocket.setKeepAlive(true);
+					clientSocket.setKeepAlive(true);
+					ClientThread clientThread = new ClientThread(clientSocket, mServerSocket);
+					clientThread.start();
+				} catch (IOException ex) {
+					if (handleError(ex, "L")) {
+						break;
+					}
 				}
-				// Connect to the destination server 
-				Socket mServerSocket = new Socket(destinationHost, destinationPort);
-				// Turn on keep-alive for both the sockets 
-				mServerSocket.setKeepAlive(true);
-				clientSocket.setKeepAlive(true);
-				ClientThread clientThread = new ClientThread(clientSocket, mServerSocket);
-				clientThread.start();
 			}
 		} catch (IOException ex) {
 			throw new RuntimeException(ex);

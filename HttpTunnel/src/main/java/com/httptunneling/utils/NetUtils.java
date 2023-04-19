@@ -1,7 +1,10 @@
 package com.httptunneling.utils;
 
 import com.httptunneling.TunnelStart;
+import static com.httptunneling.TunnelStart.isEverythingInterrupted;
 import static com.httptunneling.TunnelStart.isIpAddressValid;
+import static com.some.tcp.DateUtils.getDateStr;
+import com.some.tcp.TCPForwardClientR;
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
 import java.io.ByteArrayOutputStream;
@@ -25,8 +28,8 @@ public class NetUtils {
 
 	public static ByteArrayOutputStream readInputStream(Supplier<Socket> socketSupplier) {
 		ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
-		try (Socket socket = socketSupplier.get()) {
-			try (InputStream inputStream = new BufferedInputStream(socket.getInputStream(), BUFFER_SIZE)) {
+		try ( Socket socket = socketSupplier.get()) {
+			try ( InputStream inputStream = new BufferedInputStream(socket.getInputStream(), BUFFER_SIZE)) {
 				readImpl(inputStream, byteArrayOutputStream);
 			}
 		} catch (IOException ex) {
@@ -36,8 +39,8 @@ public class NetUtils {
 	}
 
 	public static void writeOutputStream(Supplier<Socket> socketSupplier, byte[] dataToWrite) {
-		try (Socket socket = socketSupplier.get()) {
-			try (OutputStream outputStream = new BufferedOutputStream(socket.getOutputStream(), BUFFER_SIZE)) {
+		try ( Socket socket = socketSupplier.get()) {
+			try ( OutputStream outputStream = new BufferedOutputStream(socket.getOutputStream(), BUFFER_SIZE)) {
 				outputStream.write(dataToWrite);
 				outputStream.flush();
 			}
@@ -80,5 +83,24 @@ public class NetUtils {
 			argList.remove(argsToRemove.get(i).intValue());
 		}
 		return map;
+	}
+
+	private static final int WAIT_TIME = 10 * 1000;
+
+	public static boolean handleError(Exception e, String mode) {
+		if (isEverythingInterrupted()) {
+			return true;
+		}
+		com.some.tcp.Logger.log(getDateStr());
+		com.some.tcp.Logger.log("Exception in " + mode + " mode!" + (e.getMessage() != null ? " Exception Message: " + e.getMessage() : ""));
+		try {
+			Thread.sleep(WAIT_TIME);
+		} catch (InterruptedException ex) {
+			java.util.logging.Logger.getLogger(TCPForwardClientR.class.getName()).log(Level.SEVERE, null, ex);
+		}
+		if (isEverythingInterrupted()) {
+			return true;
+		}
+		return false;
 	}
 }
