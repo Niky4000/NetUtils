@@ -28,10 +28,20 @@ public class StartSimpleHttpServer {
 
     public static final int BUFFER_SIZE = 1024 * 1024;
 
-    public static void main(String[] args) throws IOException {
+    public static void main(String[] args) throws Exception {
         List<String> argList = Stream.of(args).collect(Collectors.toList());
-        Integer port = Integer.valueOf(getConfig("-port", argList));
-        new StartSimpleHttpServer().startHttpServer(port);
+        if (argList.contains("-client")) {
+            // java -agentlib:jdwp=transport=dt_socket,server=y,suspend=y,address=21044 -jar /home/me/GIT/NetUtils/SimpleHttpServer/target/SimpleHttpServer.jar -client http://mgfomi116.i2p/?i2paddresshelper=4x37bsomt3n5oo3mx4a3u3h2asp44mpzqstvke6ctxwlz5qqbkna.b32.i2p -port 80 -proxyPort 4444
+            // java -agentlib:jdwp=transport=dt_socket,server=y,suspend=y,address=21044 -jar /home/me/GIT/NetUtils/SimpleHttpServer/target/SimpleHttpServer.jar -client mgfomi116.i2p -port 80 -proxyPort 4444
+            String host = getConfig("-client", argList);
+            Integer port = Integer.valueOf(getConfig("-port", argList));
+            Integer proxyPort = Integer.valueOf(getConfig("-proxyPort", argList));
+            new I2PClient().connect(host, port, proxyPort);
+//            new I2PClient().createServer();
+        } else {
+            Integer port = Integer.valueOf(getConfig("-port", argList));
+            new StartSimpleHttpServer().startHttpServer(port);
+        }
     }
 
     private volatile boolean stop = false;
