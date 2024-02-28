@@ -100,7 +100,8 @@ public class StartSimpleHttpServer {
         int read = 0;
         do {
             byte[] buffer = new byte[BUFFER_SIZE];
-            int contains = -1;
+            int startOfStreamContains = -1;
+            int endOfStreamContains = -1;
             do {
 //                int available = inputStream.available();
 //                System.out.println("available = " + available);
@@ -109,8 +110,11 @@ public class StartSimpleHttpServer {
 //                }
                 read = inputStream.read(buffer);
                 byteArrayOutputStream.write(buffer, 0, read);
-                contains = contains(byteArrayOutputStream.toByteArray(), endOfStream, 0);
-            } while (read > 0 && contains == -1);
+                startOfStreamContains = contains(byteArrayOutputStream.toByteArray(), startOfStream.getBytes(), 0);
+                if (startOfStreamContains > 0) {
+                    endOfStreamContains = contains(byteArrayOutputStream.toByteArray(), endOfStream, startOfStreamContains);
+                }
+            } while (read > 0 && (startOfStreamContains > 0 && endOfStreamContains == -1));
             Entry<String, Integer> headEntry = getHead(byteArrayOutputStream.toByteArray());
             if (headEntry == null) {
                 makeStandartOutput(outputStream);
@@ -149,6 +153,7 @@ public class StartSimpleHttpServer {
         return new String(hexDigits);
     }
 
+    public static final String startOfStream = "TYPE: KIOKLE";
     public final static byte[] endOfStream = new byte[]{0, 0, 10, 10, 10, 10, 0, 0};
     public static final String endStr = "\n";
     public static final String endStr2 = "\r";

@@ -8,6 +8,7 @@ import static ru.kiokle.simplehttpserver.StartSimpleHttpServer.endOfStream;
 import static ru.kiokle.simplehttpserver.StartSimpleHttpServer.endStr;
 import static ru.kiokle.simplehttpserver.StartSimpleHttpServer.getConfig;
 import static ru.kiokle.simplehttpserver.StartSimpleHttpServer.headEndStr;
+import static ru.kiokle.simplehttpserver.StartSimpleHttpServer.startOfStream;
 import static ru.kiokle.simplehttpserver.handlers.CommandEnum.EXEC;
 import static ru.kiokle.simplehttpserver.handlers.CommandEnum.LENGTH;
 
@@ -24,9 +25,9 @@ public class ExecCommandClient extends I2pClient {
     @Override
     public void handle(BufferedOutputStream outputStream, BufferedInputStream inputStream) throws Exception {
         StringBuilder stringBuilder = new StringBuilder("POST http://" + destinationHost + "/ HTTP/1.1\n"
-                + "Host: " + destinationHost + "\n"
-                + "TYPE: EXEC\n"
-                + "User-Agent: curl/8.2.1\n"
+                + "Host: " + destinationHost + "\n");
+        stringBuilder.append(startOfStream);
+        stringBuilder.append("User-Agent: curl/8.2.1\n"
                 + "Accept: */*\n"
                 + "Proxy-Connection: Keep-Alive" + headEndStr);
         String command = getConfig("-command", argList);
