@@ -114,7 +114,9 @@ public class StartSimpleHttpServer {
                 if (startOfStreamContains > 0) {
                     endOfStreamContains = contains(byteArrayOutputStream.toByteArray(), endOfStream, startOfStreamContains);
                 }
+                System.out.println(startOfStreamContains + " - " + endOfStreamContains);
             } while (read > 0 && (startOfStreamContains > 0 && endOfStreamContains == -1));
+            print(byteArrayOutputStream);
             Entry<String, Integer> headEntry = getHead(byteArrayOutputStream.toByteArray());
             if (headEntry == null) {
                 makeStandartOutput(outputStream);
