@@ -100,8 +100,10 @@ public class StartSimpleHttpServer {
         int read = 0;
         do {
             byte[] buffer = new byte[BUFFER_SIZE];
-            read = inputStream.read(buffer);
-            byteArrayOutputStream.write(buffer, 0, read);
+            do {
+                read = inputStream.read(buffer);
+                byteArrayOutputStream.write(buffer, 0, read);
+            } while (read > 0);
             Entry<String, Integer> headEntry = getHead(byteArrayOutputStream.toByteArray());
             if (headEntry == null) {
                 makeStandartOutput(outputStream);
