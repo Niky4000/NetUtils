@@ -7,6 +7,7 @@ import java.io.FileInputStream;
 import java.util.List;
 import static ru.kiokle.simplehttpserver.StartSimpleHttpServer.BUFFER_SIZE;
 import static ru.kiokle.simplehttpserver.StartSimpleHttpServer.delimiter;
+import static ru.kiokle.simplehttpserver.StartSimpleHttpServer.endOfStream;
 import static ru.kiokle.simplehttpserver.StartSimpleHttpServer.endStr;
 import static ru.kiokle.simplehttpserver.StartSimpleHttpServer.getConfig;
 import static ru.kiokle.simplehttpserver.StartSimpleHttpServer.headEndStr;
@@ -27,8 +28,9 @@ public class UploadClient extends I2pClient {
     public void handle(BufferedOutputStream outputStream, BufferedInputStream inputStream) throws Exception {
         File file = new File(getConfig("-file", argList));
         try (FileInputStream fileInputStream = new FileInputStream(file)) {
-            outputStream.write(createHead(file.getAbsolutePath(), file.length()).getBytes());
-            for (int i = 0; i < BUFFER_SIZE / 8; i++) {
+            outputStream.write(makeHeadBytes(() -> createHead(file.getAbsolutePath(), file.length())));
+            outputStream.write(endOfStream);
+            for (int i = 0; i < getIterationCount(file); i++) {
                 byte[] buffer = new byte[BUFFER_SIZE];
                 fileInputStream.read(buffer);
                 outputStream.write(buffer);
@@ -37,5 +39,16 @@ public class UploadClient extends I2pClient {
         }
         String readInputStream = readInputStream(inputStream);
         System.out.println(readInputStream);
+    }
+
+    private int getIterationCount(File file) {
+        long fileLength = file.length();
+        if (fileLength < BUFFER_SIZE) {
+            return 1;
+        } else if (fileLength % BUFFER_SIZE != 0) {
+            return ((int) (fileLength / BUFFER_SIZE)) + 1;
+        } else {
+            return (int) (fileLength / BUFFER_SIZE);
+        }
     }
 }

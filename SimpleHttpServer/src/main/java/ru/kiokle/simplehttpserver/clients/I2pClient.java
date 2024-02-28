@@ -5,7 +5,13 @@ import java.io.BufferedOutputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.util.List;
+import java.util.function.Supplier;
 import static ru.kiokle.simplehttpserver.StartSimpleHttpServer.BUFFER_SIZE;
+import static ru.kiokle.simplehttpserver.StartSimpleHttpServer.endStr;
+import static ru.kiokle.simplehttpserver.StartSimpleHttpServer.getConfig;
+import static ru.kiokle.simplehttpserver.StartSimpleHttpServer.headEndStr;
+import static ru.kiokle.simplehttpserver.StartSimpleHttpServer.startOfStream;
+import static ru.kiokle.simplehttpserver.clients.ExecCommandClient.createCommand;
 
 public abstract class I2pClient {
 
@@ -34,5 +40,18 @@ public abstract class I2pClient {
             }
         } while (read > 0);
         return new String(byteArrayOutputStream.toByteArray());
+    }
+
+    protected byte[] makeHeadBytes(Supplier<String> command) {
+        StringBuilder stringBuilder = new StringBuilder("POST http://" + destinationHost + "/ HTTP/1.1\n"
+                + "Host: " + destinationHost + "\n");
+        stringBuilder.append(startOfStream);
+        stringBuilder.append(endStr);
+        stringBuilder.append("User-Agent: curl/8.2.1\n"
+                + "Accept: */*\n"
+                + "Proxy-Connection: Keep-Alive" + headEndStr);
+        stringBuilder.append(command.get());
+        byte[] bytes = stringBuilder.toString().getBytes();
+        return bytes;
     }
 }
