@@ -27,7 +27,7 @@ public class ExecCommandClient extends I2pClient {
                 + "TYPE: EXEC\n"
                 + "User-Agent: curl/8.2.1\n"
                 + "Accept: */*\n"
-                + "Proxy-Connection: Keep-Alive\n\n");
+                + "Proxy-Connection: Keep-Alive" + headEndStr);
         String command = getConfig("-command", argList);
         stringBuilder.append(createCommand(command));
         byte[] bytes = stringBuilder.toString().getBytes();
