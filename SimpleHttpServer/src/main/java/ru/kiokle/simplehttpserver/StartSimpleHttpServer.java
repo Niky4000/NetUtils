@@ -44,7 +44,7 @@ public class StartSimpleHttpServer {
                 // java -agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=21044 -jar /home/me/GIT/NetUtils/SimpleHttpServer/target/SimpleHttpServer.jar -client ping -host me-virtual2.i2p -port 80 -proxyPort 4444
                 new I2PClient().connect(host, port, proxyPort, new PingClient(argList, host, port, proxyPort));
             } else if (client.equals("exec")) {
-                // java -agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=21044 -jar /home/me/GIT/NetUtils/SimpleHttpServer/target/SimpleHttpServer.jar -client ping -host me-virtual2.i2p -port 80 -proxyPort 4444 -command "ls -a /home/me/Distributives"
+                // java -agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=21044 -jar /home/me/GIT/NetUtils/SimpleHttpServer/target/SimpleHttpServer.jar -client exec -host me-virtual2.i2p -port 80 -proxyPort 4444 -command "ls -a /home/me/Distributives"
                 new I2PClient().connect(host, port, proxyPort, new ExecCommandClient(argList, host, port, proxyPort));
             } else if (client.equals("upload")) {
                 new I2PClient().connect(host, port, proxyPort, new UploadClient(argList, host, port, proxyPort));
