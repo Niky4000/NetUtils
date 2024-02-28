@@ -27,6 +27,7 @@ public class ExecCommandClient extends I2pClient {
         StringBuilder stringBuilder = new StringBuilder("POST http://" + destinationHost + "/ HTTP/1.1\n"
                 + "Host: " + destinationHost + "\n");
         stringBuilder.append(startOfStream);
+        stringBuilder.append(endStr);
         stringBuilder.append("User-Agent: curl/8.2.1\n"
                 + "Accept: */*\n"
                 + "Proxy-Connection: Keep-Alive" + headEndStr);
