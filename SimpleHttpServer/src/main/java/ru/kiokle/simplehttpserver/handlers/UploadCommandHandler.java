@@ -18,13 +18,16 @@ public class UploadCommandHandler implements CommandHandler {
         try (BufferedOutputStream bufferedOutputStream = new BufferedOutputStream(new FileOutputStream(new File(command)))) {
             byte[] byteArray = byteArrayOutputStream.toByteArray();
             int offset = headIndex + endOfStream.length;
-            bufferedOutputStream.write(byteArray, offset, length > byteArray.length - offset ? byteArray.length - offset : length);
+            long writtenBytes = length > byteArray.length - offset ? byteArray.length - offset : length;
+            long estimatedBytes = length - writtenBytes;
+            bufferedOutputStream.write(byteArray, offset, (int) writtenBytes);
             byte[] buffer = new byte[BUFFER_SIZE];
-            int read = 0;
+            long read = 0;
             while (length > (byteArrayOutputStream.size() - headIndex) + read) {
                 int read2 = inputStream.read(buffer);
-                bufferedOutputStream.write(buffer, 0, read2);
+                bufferedOutputStream.write(buffer, 0, estimatedBytes > read2 ? read2 : (int) estimatedBytes);
                 read += read2;
+                estimatedBytes -= read2;
             }
             bufferedOutputStream.flush();
             makeStandartOutput(outputStream);
