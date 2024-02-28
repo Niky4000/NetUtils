@@ -19,6 +19,7 @@ import static ru.kiokle.simplehttpserver.handlers.CommandEnum.EXEC;
 import static ru.kiokle.simplehttpserver.handlers.CommandEnum.LENGTH;
 import static ru.kiokle.simplehttpserver.handlers.CommandEnum.UPLOAD;
 import ru.kiokle.simplehttpserver.handlers.CommandHandler;
+import static ru.kiokle.simplehttpserver.handlers.CommandHandler.makeStandartOutput;
 import ru.kiokle.simplehttpserver.handlers.ExecCommandHandler;
 import ru.kiokle.simplehttpserver.handlers.UploadCommandHandler;
 import ru.kiokle.simplehttpserver.utils.MapBuilder;
@@ -81,6 +82,7 @@ public class StartSimpleHttpServer {
             byteArrayOutputStream.write(buffer, 0, read);
             Entry<String, Integer> headEntry = getHead(byteArrayOutputStream.toByteArray());
             if (headEntry == null) {
+                makeStandartOutput(outputStream);
                 break;
             }
             String head = headEntry.getKey();
