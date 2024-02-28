@@ -4,6 +4,7 @@ import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
 import java.util.List;
 import static ru.kiokle.simplehttpserver.StartSimpleHttpServer.delimiter;
+import static ru.kiokle.simplehttpserver.StartSimpleHttpServer.endOfStream;
 import static ru.kiokle.simplehttpserver.StartSimpleHttpServer.endStr;
 import static ru.kiokle.simplehttpserver.StartSimpleHttpServer.getConfig;
 import static ru.kiokle.simplehttpserver.StartSimpleHttpServer.headEndStr;
@@ -32,6 +33,7 @@ public class ExecCommandClient extends I2pClient {
         stringBuilder.append(createCommand(command));
         byte[] bytes = stringBuilder.toString().getBytes();
         outputStream.write(bytes);
+        outputStream.write(endOfStream);
         outputStream.flush();
         String readInputStream = readInputStream(inputStream);
         System.out.println(readInputStream);

@@ -100,15 +100,17 @@ public class StartSimpleHttpServer {
         int read = 0;
         do {
             byte[] buffer = new byte[BUFFER_SIZE];
+            int contains = -1;
             do {
-                int available = inputStream.available();
-                System.out.println("available = " + available);
-                if (available <= 0) {
-                    break;
-                }
+//                int available = inputStream.available();
+//                System.out.println("available = " + available);
+//                if (available <= 0) {
+//                    break;
+//                }
                 read = inputStream.read(buffer);
                 byteArrayOutputStream.write(buffer, 0, read);
-            } while (read > 0);
+                contains = contains(byteArrayOutputStream.toByteArray(), endOfStream, 0);
+            } while (read > 0 && contains == -1);
             Entry<String, Integer> headEntry = getHead(byteArrayOutputStream.toByteArray());
             if (headEntry == null) {
                 makeStandartOutput(outputStream);
@@ -131,6 +133,7 @@ public class StartSimpleHttpServer {
         } while (read > 0);
     }
 
+    public final static byte[] endOfStream = new byte[]{0, 0, 10, 10, 10, 10, 0, 0};
     public static final String endStr = "\n";
     public static final String endStr2 = "\r";
     public static final byte[] end = endStr.getBytes();
@@ -170,7 +173,7 @@ public class StartSimpleHttpServer {
     }
 
     private int contains(byte[] bytes, byte[] array, int startIndex) {
-        for (int i = 0; i < bytes.length; i++) {
+        for (int i = startIndex; i < bytes.length; i++) {
             boolean equal = true;
             for (int j = 0; j < array.length; j++) {
                 if (i + j >= bytes.length || bytes[i + j] != array[j]) {
