@@ -155,7 +155,7 @@ public class StartSimpleHttpServer {
         return new String(hexDigits);
     }
 
-    public static final String startOfStream = "TYPE: KIOKLE";
+    public static final String startOfStream = "KIOKLE: KIOKLE\n";
     public final static byte[] endOfStream = new byte[]{0, 0, 10, 10, 10, 10, 0, 0};
     public static final String endStr = "\n";
     public static final String endStr2 = "\r";
