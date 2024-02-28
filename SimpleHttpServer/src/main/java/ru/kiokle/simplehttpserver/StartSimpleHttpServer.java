@@ -133,6 +133,22 @@ public class StartSimpleHttpServer {
         } while (read > 0);
     }
 
+    private void print(ByteArrayOutputStream byteArrayOutputStream) {
+        byte[] array = byteArrayOutputStream.toByteArray();
+        StringBuilder stringBuilder = new StringBuilder();
+        for (byte b : array) {
+            stringBuilder.append(byteToHex(b));
+        }
+        System.out.println(stringBuilder.toString());
+    }
+
+    public String byteToHex(byte num) {
+        char[] hexDigits = new char[2];
+        hexDigits[0] = Character.forDigit((num >> 4) & 0xF, 16);
+        hexDigits[1] = Character.forDigit((num & 0xF), 16);
+        return new String(hexDigits);
+    }
+
     public final static byte[] endOfStream = new byte[]{0, 0, 10, 10, 10, 10, 0, 0};
     public static final String endStr = "\n";
     public static final String endStr2 = "\r";
