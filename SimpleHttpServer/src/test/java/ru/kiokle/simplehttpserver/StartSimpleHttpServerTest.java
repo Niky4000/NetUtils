@@ -13,6 +13,8 @@ import static ru.kiokle.simplehttpserver.StartSimpleHttpServer.BUFFER_SIZE;
 import static ru.kiokle.simplehttpserver.StartSimpleHttpServer.delimiter;
 import static ru.kiokle.simplehttpserver.StartSimpleHttpServer.endStr;
 import static ru.kiokle.simplehttpserver.StartSimpleHttpServer.headEndStr;
+import static ru.kiokle.simplehttpserver.clients.ExecCommandClient.createCommand;
+import static ru.kiokle.simplehttpserver.clients.UploadClient.createHead;
 import static ru.kiokle.simplehttpserver.handlers.CommandEnum.EXEC;
 import static ru.kiokle.simplehttpserver.handlers.CommandEnum.LENGTH;
 import static ru.kiokle.simplehttpserver.handlers.CommandEnum.UPLOAD;
@@ -55,10 +57,6 @@ public class StartSimpleHttpServerTest {
         }
     }
 
-    private String createHead(String targetFile, long length) {
-        return UPLOAD.name() + delimiter + targetFile + endStr + LENGTH.name() + delimiter + length + headEndStr;
-    }
-
     @Test
     public void execCommandTest() throws Exception {
         String baseDir = FileUtils.getPathToJar().getParentFile().getAbsolutePath();
@@ -79,10 +77,6 @@ public class StartSimpleHttpServerTest {
         simpleHttpServer.stopHttpServer();
         listerner.join();
         Assert.assertTrue(input != null && input.length() > 0);
-    }
-
-    private String createCommand(String command) {
-        return EXEC.name() + delimiter + command + endStr + LENGTH.name() + delimiter + "0" + headEndStr;
     }
 
     private Thread createListerner(final StartSimpleHttpServer simpleHttpServer) throws InterruptedException {

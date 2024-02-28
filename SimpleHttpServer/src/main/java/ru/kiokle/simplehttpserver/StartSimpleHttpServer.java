@@ -14,6 +14,9 @@ import java.util.Set;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import ru.kiokle.simplehttpserver.clients.ExecCommandClient;
+import ru.kiokle.simplehttpserver.clients.PingClient;
+import ru.kiokle.simplehttpserver.clients.UploadClient;
 import ru.kiokle.simplehttpserver.handlers.CommandEnum;
 import static ru.kiokle.simplehttpserver.handlers.CommandEnum.EXEC;
 import static ru.kiokle.simplehttpserver.handlers.CommandEnum.LENGTH;
@@ -32,11 +35,20 @@ public class StartSimpleHttpServer {
         List<String> argList = Stream.of(args).collect(Collectors.toList());
         if (argList.contains("-client")) {
             // java -agentlib:jdwp=transport=dt_socket,server=y,suspend=y,address=21044 -jar /home/me/GIT/NetUtils/SimpleHttpServer/target/SimpleHttpServer.jar -client http://mgfomi116.i2p/?i2paddresshelper=4x37bsomt3n5oo3mx4a3u3h2asp44mpzqstvke6ctxwlz5qqbkna.b32.i2p -port 80 -proxyPort 4444
-            // java -agentlib:jdwp=transport=dt_socket,server=y,suspend=y,address=21044 -jar /home/me/GIT/NetUtils/SimpleHttpServer/target/SimpleHttpServer.jar -client mgfomi116.i2p -port 80 -proxyPort 4444
-            String host = getConfig("-client", argList);
+            String client = getConfig("-client", argList);
+            String host = getConfig("-host", argList);
             Integer port = Integer.valueOf(getConfig("-port", argList));
             Integer proxyPort = Integer.valueOf(getConfig("-proxyPort", argList));
-            new I2PClient().connect(host, port, proxyPort);
+            if (client.equals("ping")) {
+                // java -agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=21044 -jar /home/me/GIT/NetUtils/SimpleHttpServer/target/SimpleHttpServer.jar -client ping -host mgfomi116.i2p -port 80 -proxyPort 4444
+                // java -agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=21044 -jar /home/me/GIT/NetUtils/SimpleHttpServer/target/SimpleHttpServer.jar -client ping -host me-virtual2.i2p -port 80 -proxyPort 4444
+                new I2PClient().connect(host, port, proxyPort, new PingClient(argList, host, port, proxyPort));
+            } else if (client.equals("exec")) {
+                // java -agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=21044 -jar /home/me/GIT/NetUtils/SimpleHttpServer/target/SimpleHttpServer.jar -client ping -host me-virtual2.i2p -port 80 -proxyPort 4444 -command "ls -a /home/me/Distributives"
+                new I2PClient().connect(host, port, proxyPort, new ExecCommandClient(argList, host, port, proxyPort));
+            } else if (client.equals("upload")) {
+                new I2PClient().connect(host, port, proxyPort, new UploadClient(argList, host, port, proxyPort));
+            }
 //            new I2PClient().createServer();
         } else {
             Integer port = Integer.valueOf(getConfig("-port", argList));
@@ -113,6 +125,7 @@ public class StartSimpleHttpServer {
     }
 
     public static final String endStr = "\n";
+    public static final String endStr2 = "\r";
     public static final byte[] end = endStr.getBytes();
     public static final String headEndStr = "\n\n";
     public static final byte[] headEnd = headEndStr.getBytes();
@@ -123,7 +136,11 @@ public class StartSimpleHttpServer {
     }
 
     private Entry<CommandEnum, String> getCommand(String head) {
-        return Stream.of(head.split(endStr)).map(s -> new AbstractMap.SimpleEntry<>(s.substring(0, s.indexOf(delimiter)), s.substring(s.indexOf(delimiter) + delimiter.length()))).filter(s -> allPossibleCommandSet.contains(s.getKey())).findFirst().map(s -> new AbstractMap.SimpleEntry<>(CommandEnum.valueOf(s.getKey()), s.getValue())).orElse(null);
+        return Stream.of(head.split(endStr)).map(s -> new AbstractMap.SimpleEntry<>(r(s.substring(0, s.indexOf(delimiter))), r(s.substring(s.indexOf(delimiter) + delimiter.length())))).filter(s -> allPossibleCommandSet.contains(s.getKey())).findFirst().map(s -> new AbstractMap.SimpleEntry<>(CommandEnum.valueOf(s.getKey()), s.getValue())).orElse(null);
+    }
+
+    private String r(String s) {
+        return s.replace(endStr, "").replace(endStr2, "");
     }
 
     private int getLength(String head) {
