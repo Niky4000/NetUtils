@@ -101,6 +101,11 @@ public class StartSimpleHttpServer {
         do {
             byte[] buffer = new byte[BUFFER_SIZE];
             do {
+                int available = inputStream.available();
+                System.out.println("available = " + available);
+                if (available <= 0) {
+                    break;
+                }
                 read = inputStream.read(buffer);
                 byteArrayOutputStream.write(buffer, 0, read);
             } while (read > 0);
@@ -138,7 +143,14 @@ public class StartSimpleHttpServer {
     }
 
     private Entry<CommandEnum, String> getCommand(String head) {
-        return Stream.of(head.split(endStr)).map(s -> new AbstractMap.SimpleEntry<>(r(s.substring(0, s.indexOf(delimiter))), r(s.substring(s.indexOf(delimiter) + delimiter.length())))).filter(s -> allPossibleCommandSet.contains(s.getKey())).findFirst().map(s -> new AbstractMap.SimpleEntry<>(CommandEnum.valueOf(s.getKey()), s.getValue())).orElse(null);
+        String[] split = head.split(endStr);
+        return Stream.of(split).filter(s -> s.contains(delimiter)).map(s -> {
+            String key = r(s.substring(0, s.indexOf(delimiter)));
+            String value = r(s.substring(s.indexOf(delimiter) + delimiter.length()));
+            return new AbstractMap.SimpleEntry<>(key, value);
+        }).filter(s -> {
+            return allPossibleCommandSet.contains(s.getKey());
+        }).findFirst().map(s -> new AbstractMap.SimpleEntry<>(CommandEnum.valueOf(s.getKey()), s.getValue())).orElse(null);
     }
 
     private String r(String s) {

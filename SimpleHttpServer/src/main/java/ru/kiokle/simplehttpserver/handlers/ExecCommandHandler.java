@@ -15,10 +15,17 @@ public class ExecCommandHandler implements CommandHandler {
         try {
             Process process = Runtime.getRuntime().exec(command);
             try (BufferedReader input = new BufferedReader(new InputStreamReader(process.getInputStream()))) {
+                String headers = "HTTP/1.1 200\n"
+                        //                + "content-length: " + data.length + "\n"
+                        + "cache-control: no-cache\n"
+                        + "content-type: text/html\n"
+                        + "connection: close\n\n";
+                outputStream.write(headers.getBytes());
                 String line;
                 while ((line = input.readLine()) != null) {
                     outputStream.write((line + endStr).getBytes());
                 }
+                outputStream.flush();
             }
         } catch (IOException ex) {
             throw new RuntimeException(ex);
