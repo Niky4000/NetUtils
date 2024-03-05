@@ -29,7 +29,7 @@ import ru.kiokle.simplehttpserver.utils.MapBuilder;
 
 public class StartSimpleHttpServer {
 
-    public static final int BUFFER_SIZE = 1024 * 1024;
+    public static final int BUFFER_SIZE = 1024 * 10;
 
     public static void main(String[] args) throws Exception {
         List<String> argList = Stream.of(args).collect(Collectors.toList());
