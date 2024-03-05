@@ -35,18 +35,7 @@ public class I2PClient {
 //        String readInputStream = readInputStream(new BufferedInputStream(socket.getInputStream(), BUFFER_SIZE));
 //        System.out.println(readInputStream != null ? readInputStream : "readInputStream is empty!");
 //    }
-    public void connect(String destinationHost, int destinationPort, int proxyPort, I2pClient i2pClient) throws Exception {
-        String readInputStream = null;
-        SocketAddress proxyAddress = new InetSocketAddress("localhost", proxyPort);
-        Proxy proxy = new Proxy(Proxy.Type.HTTP, proxyAddress);
-        try (Socket socket = new Socket(proxy)) {
-            socket.connect(new InetSocketAddress(destinationHost, destinationPort));
-            try (BufferedOutputStream outputStream = new BufferedOutputStream(socket.getOutputStream());
-                    BufferedInputStream inputStream = new BufferedInputStream(socket.getInputStream(), BUFFER_SIZE)) {
-                i2pClient.handle(outputStream, inputStream);
-            }
-        }
-    }
+
 
 //    public void createI2PServer() {
 //        I2PSocketManager manager = I2PSocketManagerFactory.createManager();

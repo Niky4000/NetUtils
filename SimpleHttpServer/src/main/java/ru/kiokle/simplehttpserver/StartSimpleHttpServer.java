@@ -15,13 +15,17 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Consumer;
 import java.util.function.Supplier;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import ru.kiokle.simplehttpserver.clients.ExecCommandClient;
 import ru.kiokle.simplehttpserver.clients.Md5Client;
 import ru.kiokle.simplehttpserver.clients.PingClient;
 import ru.kiokle.simplehttpserver.clients.SelfPathClient;
+import ru.kiokle.simplehttpserver.clients.StopServerClient;
 import ru.kiokle.simplehttpserver.clients.UploadClient;
 import ru.kiokle.simplehttpserver.handlers.CommandEnum;
 import static ru.kiokle.simplehttpserver.handlers.CommandEnum.EXEC;
@@ -57,45 +61,68 @@ public class StartSimpleHttpServer {
             if (client.equals("ping")) {
                 // java -agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=21044 -jar /home/me/GIT/NetUtils/SimpleHttpServer/target/SimpleHttpServer.jar -client ping -host mgfomi116.i2p -port 80 -proxyPort 4444
                 // java -agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=21044 -jar /home/me/GIT/NetUtils/SimpleHttpServer/target/SimpleHttpServer.jar -client ping -host me-virtual2.i2p -port 80 -proxyPort 4444
-                new I2PClient().connect(host, port, proxyPort, new PingClient(argList, host, port, proxyPort));
+                new PingClient(argList, host, port, proxyPort).connect();
             } else if (client.equals("exec")) {
                 // java -agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=21044 -jar /home/me/GIT/NetUtils/SimpleHttpServer/target/SimpleHttpServer.jar -client exec -host me-virtual2.i2p -port 80 -proxyPort 4444 -command "ls -a /home/me/Distributives"
-                new I2PClient().connect(host, port, proxyPort, new ExecCommandClient(argList, host, port, proxyPort));
+                new ExecCommandClient(argList, host, port, proxyPort).connect();
             } else if (client.equals("upload")) {
-                new I2PClient().connect(host, port, proxyPort, new UploadClient(argList, host, port, proxyPort, new File(getConfig("-file", argList)), getConfig("-toFile", argList)));
+                new UploadClient(argList, host, port, proxyPort, new File(getConfig("-file", argList)), getConfig("-toFile", argList)).connect();
             } else if (client.equals("md5")) {
                 // java -agentlib:jdwp=transport=dt_socket,server=y,suspend=y,address=21044 -jar /home/me/GIT/NetUtils/SimpleHttpServer/target/SimpleHttpServer.jar -client md5 -host me-virtual2.i2p -port 80 -proxyPort 4444 -file /home/me/tmp/pollResult4
                 AtomicReference<String> md5Reference = new AtomicReference<>();
-                new I2PClient().connect(host, port, proxyPort, new Md5Client(argList, host, port, proxyPort, md5Reference));
+                new Md5Client(argList, host, port, proxyPort, md5Reference).connect();
                 System.out.println(md5Reference.get());
             } else if (client.equals("selfPath")) {
                 // java -agentlib:jdwp=transport=dt_socket,server=y,suspend=y,address=21044 -jar /home/me/GIT/NetUtils/SimpleHttpServer/target/SimpleHttpServer.jar -client selfPath -host me-virtual2.i2p -port 80 -proxyPort 4444
                 AtomicReference<String> selfPathReference = new AtomicReference<>();
-                new I2PClient().connect(host, port, proxyPort, new SelfPathClient(argList, host, port, proxyPort, selfPathReference));
+                new SelfPathClient(argList, host, port, proxyPort, selfPathReference).connect();
                 System.out.println(selfPathReference.get());
             } else if (client.equals("selfUpdate")) {
-//                new I2PClient().connect(host, port, proxyPort, new UploadClient(argList, host, port, proxyPort));
+                // java -agentlib:jdwp=transport=dt_socket,server=y,suspend=y,address=21044 -jar /home/me/GIT/NetUtils/SimpleHttpServer/target/SimpleHttpServer.jar -client selfUpdate -host me-virtual2.i2p -port 80 -proxyPort 4444
+                selfUpdateImpl(argList, host, port, proxyPort);
             }
 //            new I2PClient().createServer();
         } else {
-            Integer port = Integer.valueOf(getConfig("-port", argList));
-            new StartSimpleHttpServer().startHttpServer(port);
+            // java -agentlib:jdwp=transport=dt_socket,server=y,suspend=y,address=21044 -jar /home/me/GIT/NetUtils/SimpleHttpServer/target/SimpleHttpServer.jar -port 7662
+            // java -agentlib:jdwp=transport=dt_socket,server=y,suspend=y,address=21045 -jar /home/me/GIT/NetUtils/SimpleHttpServer/target/SimpleHttpServer_5555.jar -port 7662
+            checkForSelfUpdate(argList, l -> {
+                try {
+                    new StartSimpleHttpServer().startHttpServer(Integer.valueOf(getConfig("-port", argList)));
+                } catch (IOException ex) {
+                    throw new RuntimeException(ex);
+                }
+            });
         }
     }
 
-    private void selfUpdateImpl(List<String> argList, String host, Integer port, Integer proxyPort) throws Exception {
+    private static void selfUpdateImpl(List<String> argList, String host, Integer port, Integer proxyPort) throws Exception {
+        AtomicReference<String> selfPathReference = new AtomicReference<>();
+        new SelfPathClient(argList, host, port, proxyPort, selfPathReference).connect();
+        String newSelfTempFileName = createSelfTempFileName(selfPathReference.get());
+        System.out.println(newSelfTempFileName);
         File pathToJar = FileUtils.getPathToJar();
-        new I2PClient().connect(host, port, proxyPort, new UploadClient(argList, host, port, proxyPort, pathToJar, getConfig("-toFile", argList)));
+        new UploadClient(argList, host, port, proxyPort, pathToJar, newSelfTempFileName).connect();
     }
 
+    private static String createSelfTempFileName(String remoteSelfPath) {
+        String remoteTempFileName = remoteSelfPath.substring(0, remoteSelfPath.lastIndexOf(POINT)) + TEMP_FILE_MARK + ((int) (Math.random() * 100000)) + remoteSelfPath.substring(remoteSelfPath.lastIndexOf(POINT));
+        return remoteTempFileName;
+    }
+
+    private static final String POINT = ".";
     private static final String TEMP_FILE_MARK = "_";
     private static final int TIME_TO_WAIT = 10;
 
-    private void checkForSelfUpdate() throws IOException {
+    private static void checkForSelfUpdate(List<String> argList, Consumer<List<String>> argListConsumer) throws Exception {
         File pathToJar = FileUtils.getPathToJar();
         String name = pathToJar.getName();
         if (name.contains(TEMP_FILE_MARK)) {
-            String newName = name.substring(0, name.indexOf(TEMP_FILE_MARK)) + name.substring(name.indexOf("."));
+            try {
+                new StopServerClient(argList, "localhost", Integer.valueOf(getConfig("-port", argList))).connect();
+            } catch (Exception e) {
+                System.out.println("There is no client launched!");
+            }
+            String newName = pathToJar.getParentFile().getAbsolutePath() + File.separator + name.substring(0, name.indexOf(TEMP_FILE_MARK)) + name.substring(name.indexOf(POINT));
             File file = new File(newName);
             while (file.exists()) {
                 try {
@@ -106,11 +133,14 @@ public class StartSimpleHttpServer {
                 }
             }
             Files.write(file.toPath(), Files.readAllBytes(pathToJar.toPath()), StandardOpenOption.CREATE_NEW);
+            FileUtils.launchSelf(argList.toArray(String[]::new), file.getAbsoluteFile().toPath());
+        } else {
+            argListConsumer.accept(argList);
         }
     }
 
-    private volatile boolean stop = false;
-    private Integer port;
+    private static volatile boolean stop = false;
+    private static volatile Integer port;
 
     public void startHttpServer(Integer port) throws IOException {
         this.port = port;
@@ -129,7 +159,7 @@ public class StartSimpleHttpServer {
         }
     }
 
-    public void stopHttpServer() throws IOException {
+    public static void stopHttpServer() throws IOException {
         stop = true;
         try (Socket socket = new Socket("127.0.0.1", port)) {
         }

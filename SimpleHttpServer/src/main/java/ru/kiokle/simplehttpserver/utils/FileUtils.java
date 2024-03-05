@@ -2,8 +2,13 @@ package ru.kiokle.simplehttpserver.utils;
 
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.IOException;
+import java.lang.management.ManagementFactory;
+import java.nio.file.Path;
 import java.security.MessageDigest;
 import java.util.Arrays;
+import java.util.List;
+import java.util.stream.Stream;
 
 public class FileUtils {
 
@@ -77,5 +82,14 @@ public class FileUtils {
             hexChars[j * 2 + 1] = HEX_ARRAY[v & 0x0F];
         }
         return new String(hexChars);
+    }
+
+    public static Process launchSelf(String[] args, Path to) throws IOException {
+        List<String> inputArguments = ManagementFactory.getRuntimeMXBean().getInputArguments();
+        String commandLineOptions = inputArguments.stream().reduce("", (str1, str2) -> str1 + " " + str2);
+        String commandLineArguments = Stream.of(args).reduce("", (str1, str2) -> str1 + " " + str2);
+        String exec = "java" + commandLineOptions + " -jar " + to.toFile().getAbsolutePath() + commandLineArguments;
+        Process process = Runtime.getRuntime().exec(exec);
+        return process;
     }
 }
