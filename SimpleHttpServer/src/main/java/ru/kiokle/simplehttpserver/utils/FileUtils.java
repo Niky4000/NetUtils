@@ -20,7 +20,7 @@ public class FileUtils {
         try {
             File file = new File(handleUri(FileUtils.class.getProtectionDomain().getCodeSource().getLocation().toURI().toString()));
             if (file.getAbsolutePath().contains("classes")) { // Launched from debugger!
-                file = Arrays.stream(file.getParentFile().listFiles()).filter(localFile -> localFile.getName().endsWith(".jar")).findFirst().get();
+                file = Arrays.stream(file.getParentFile().listFiles()).filter(localFile -> localFile.getName().endsWith(".jar") && !localFile.getName().contains("-")).findFirst().get();
             }
             return file;
         } catch (Exception e) {

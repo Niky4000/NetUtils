@@ -110,16 +110,32 @@ public class StartSimpleHttpServer {
         System.out.println(newSelfTempFileName);
         File pathToJar = FileUtils.getPathToJar();
         new UploadClient(argList, host, port, proxyPort, pathToJar, newSelfTempFileName).connect();
-        String remoteExecCommand = selfPathReference.get().replace(remoteSelfPath, newSelfTempFileName);
+        String remoteExecCommand = incrementAddress(selfPathReference.get().replace(remoteSelfPath, newSelfTempFileName));
         new ExecCommandClient(argList, host, port, proxyPort, remoteExecCommand).connect();
+    }
+
+    private static final String address = "address=";
+
+    private static String incrementAddress(String commandLineArgument) {
+        if (commandLineArgument.contains(address)) {
+            int addressIndex = commandLineArgument.indexOf(address);
+            int endIndex = commandLineArgument.indexOf(" ", addressIndex + address.length());
+            String portStr = commandLineArgument.substring(addressIndex + address.length(), endIndex);
+            Integer debugPort = Integer.valueOf(portStr);
+            debugPort++;
+            String newCommandLineArgument = commandLineArgument.replace(portStr, debugPort.toString());
+            return newCommandLineArgument;
+        } else {
+            return commandLineArgument;
+        }
     }
 
     private static final String JAR = "-jar";
 
     private static String getRemoteSelfPathFromRemoteCommandLineArgument(String remoteCommandLineArgument) {
         int jarIndex = remoteCommandLineArgument.indexOf(JAR);
-        int indexOfSpaceAfterJar = remoteCommandLineArgument.indexOf(delimiter, jarIndex + JAR.length());
-        String remoteSelfPath = remoteCommandLineArgument.substring(jarIndex, indexOfSpaceAfterJar);
+        int indexOfSpaceAfterJar = remoteCommandLineArgument.indexOf(delimiter, jarIndex + JAR.length() + delimiter.length());
+        String remoteSelfPath = remoteCommandLineArgument.substring(jarIndex + JAR.length() + delimiter.length(), indexOfSpaceAfterJar);
         return remoteSelfPath;
     }
 
