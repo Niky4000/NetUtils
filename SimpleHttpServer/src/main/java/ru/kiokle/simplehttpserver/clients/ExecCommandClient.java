@@ -13,8 +13,11 @@ import static ru.kiokle.simplehttpserver.handlers.CommandEnum.LENGTH;
 
 public class ExecCommandClient extends I2pClient {
 
-    public ExecCommandClient(List<String> argList, String destinationHost, int destinationPort, int proxyPort) {
+    private final String command;
+
+    public ExecCommandClient(List<String> argList, String destinationHost, int destinationPort, int proxyPort, String command) {
         super(argList, destinationHost, destinationPort, proxyPort);
+        this.command = command;
     }
 
     public static String createCommand(String command) {
@@ -23,7 +26,7 @@ public class ExecCommandClient extends I2pClient {
 
     @Override
     public void handle(BufferedOutputStream outputStream, BufferedInputStream inputStream) throws Exception {
-        outputStream.write(makeHeadBytes(() -> createCommand(getConfig("-command", argList))));
+        outputStream.write(makeHeadBytes(() -> createCommand(command)));
         outputStream.write(endOfStream);
         outputStream.flush();
         String readInputStream = readInputStream(inputStream);

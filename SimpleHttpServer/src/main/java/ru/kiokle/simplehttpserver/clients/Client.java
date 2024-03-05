@@ -4,13 +4,12 @@ import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.util.List;
 import java.util.function.Supplier;
 import static ru.kiokle.simplehttpserver.StartSimpleHttpServer.BUFFER_SIZE;
 import static ru.kiokle.simplehttpserver.StartSimpleHttpServer.endStr;
-import static ru.kiokle.simplehttpserver.StartSimpleHttpServer.headEndStr;
+import static ru.kiokle.simplehttpserver.StartSimpleHttpServer.headEndStr2;
 import static ru.kiokle.simplehttpserver.StartSimpleHttpServer.startOfStream;
 
 public abstract class Client {
@@ -47,7 +46,7 @@ public abstract class Client {
         stringBuilder.append(endStr);
         stringBuilder.append("User-Agent: curl/8.2.1\n"
                 + "Accept: */*\n"
-                + "Proxy-Connection: Keep-Alive" + headEndStr);
+                + "Proxy-Connection: Keep-Alive" + headEndStr2);
         stringBuilder.append(command.get());
         byte[] bytes = stringBuilder.toString().getBytes();
         return bytes;

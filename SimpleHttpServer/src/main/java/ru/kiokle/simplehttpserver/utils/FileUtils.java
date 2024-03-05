@@ -85,11 +85,17 @@ public class FileUtils {
     }
 
     public static Process launchSelf(String[] args, Path to) throws IOException {
+        String exec = getLaunchArguments(args, to);
+        System.out.println(exec);
+        Process process = Runtime.getRuntime().exec(exec);
+        return process;
+    }
+
+    public static String getLaunchArguments(String[] args, Path to) {
         List<String> inputArguments = ManagementFactory.getRuntimeMXBean().getInputArguments();
         String commandLineOptions = inputArguments.stream().reduce("", (str1, str2) -> str1 + " " + str2);
         String commandLineArguments = Stream.of(args).reduce("", (str1, str2) -> str1 + " " + str2);
         String exec = "java" + commandLineOptions + " -jar " + to.toFile().getAbsolutePath() + commandLineArguments;
-        Process process = Runtime.getRuntime().exec(exec);
-        return process;
+        return exec;
     }
 }
