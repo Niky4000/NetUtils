@@ -8,10 +8,8 @@ import java.util.List;
 import java.util.function.Supplier;
 import static ru.kiokle.simplehttpserver.StartSimpleHttpServer.BUFFER_SIZE;
 import static ru.kiokle.simplehttpserver.StartSimpleHttpServer.endStr;
-import static ru.kiokle.simplehttpserver.StartSimpleHttpServer.getConfig;
 import static ru.kiokle.simplehttpserver.StartSimpleHttpServer.headEndStr;
 import static ru.kiokle.simplehttpserver.StartSimpleHttpServer.startOfStream;
-import static ru.kiokle.simplehttpserver.clients.ExecCommandClient.createCommand;
 
 public abstract class I2pClient {
 

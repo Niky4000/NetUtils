@@ -9,7 +9,7 @@ import java.util.Date;
 
 public interface CommandHandler {
 
-    public void handle(ByteArrayOutputStream byteArrayOutputStream, BufferedInputStream inputStream, int length, BufferedOutputStream outputStream, int headIndex, String command);
+    public void handle(ByteArrayOutputStream byteArrayOutputStream, BufferedInputStream inputStream, int length, BufferedOutputStream outputStream, int headIndex, String command) throws Exception;
 
     public static void makeStandartOutput(final BufferedOutputStream outputStream) throws IOException {
         byte[] data = (new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new Date()) + " Hello World!!!").getBytes();
@@ -21,5 +21,12 @@ public interface CommandHandler {
         outputStream.write(headers.getBytes());
         outputStream.write(data);
         outputStream.flush();
+    }
+
+    default StringBuilder getHeaders() {
+        return new StringBuilder("HTTP/1.1 200\n"
+                + "cache-control: no-cache\n"
+                + "content-type: text/html\n"
+                + "connection: close\n\n");
     }
 }

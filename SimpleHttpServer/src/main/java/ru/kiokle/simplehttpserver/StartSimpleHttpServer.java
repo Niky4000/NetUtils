@@ -3,9 +3,12 @@ package ru.kiokle.simplehttpserver;
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
 import java.io.ByteArrayOutputStream;
+import java.io.File;
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.nio.file.Files;
+import java.nio.file.StandardOpenOption;
 import java.util.AbstractMap;
 import java.util.List;
 import java.util.Map;
@@ -15,17 +18,22 @@ import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import ru.kiokle.simplehttpserver.clients.ExecCommandClient;
+import ru.kiokle.simplehttpserver.clients.Md5Client;
 import ru.kiokle.simplehttpserver.clients.PingClient;
 import ru.kiokle.simplehttpserver.clients.UploadClient;
 import ru.kiokle.simplehttpserver.handlers.CommandEnum;
 import static ru.kiokle.simplehttpserver.handlers.CommandEnum.EXEC;
 import static ru.kiokle.simplehttpserver.handlers.CommandEnum.LENGTH;
+import static ru.kiokle.simplehttpserver.handlers.CommandEnum.MD5;
 import static ru.kiokle.simplehttpserver.handlers.CommandEnum.UPLOAD;
 import ru.kiokle.simplehttpserver.handlers.CommandHandler;
 import static ru.kiokle.simplehttpserver.handlers.CommandHandler.makeStandartOutput;
 import ru.kiokle.simplehttpserver.handlers.ExecCommandHandler;
+import ru.kiokle.simplehttpserver.handlers.Md5CommandHandler;
 import ru.kiokle.simplehttpserver.handlers.UploadCommandHandler;
+import ru.kiokle.simplehttpserver.utils.FileUtils;
 import ru.kiokle.simplehttpserver.utils.MapBuilder;
+import ru.kiokle.simplehttpserver.utils.WaitUtils;
 
 public class StartSimpleHttpServer {
 
@@ -48,11 +56,37 @@ public class StartSimpleHttpServer {
                 new I2PClient().connect(host, port, proxyPort, new ExecCommandClient(argList, host, port, proxyPort));
             } else if (client.equals("upload")) {
                 new I2PClient().connect(host, port, proxyPort, new UploadClient(argList, host, port, proxyPort));
+            } else if (client.equals("md5")) {
+                // java -agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=21044 -jar /home/me/GIT/NetUtils/SimpleHttpServer/target/SimpleHttpServer.jar -client md5 -host me-virtual2.i2p -port 80 -proxyPort 4444 -file /home/me/tmp/pollResult4
+                new I2PClient().connect(host, port, proxyPort, new Md5Client(argList, host, port, proxyPort));
+            } else if (client.equals("selfUpdate")) {
+                new I2PClient().connect(host, port, proxyPort, new UploadClient(argList, host, port, proxyPort));
             }
 //            new I2PClient().createServer();
         } else {
             Integer port = Integer.valueOf(getConfig("-port", argList));
             new StartSimpleHttpServer().startHttpServer(port);
+        }
+    }
+
+    private static final String TEMP_FILE_MARK = "_";
+    private static final int TIME_TO_WAIT = 10;
+
+    private void checkForSelfUpdate() throws IOException {
+        File pathToJar = FileUtils.getPathToJar();
+        String name = pathToJar.getName();
+        if (name.contains(TEMP_FILE_MARK)) {
+            String newName = name.substring(0, name.indexOf(TEMP_FILE_MARK)) + name.substring(name.indexOf("."));
+            File file = new File(newName);
+            while (file.exists()) {
+                try {
+                    file.delete();
+                } catch (Exception e) {
+                    e.printStackTrace();
+                    WaitUtils.waitSomeTime(TIME_TO_WAIT);
+                }
+            }
+            Files.write(file.toPath(), Files.readAllBytes(pathToJar.toPath()), StandardOpenOption.CREATE_NEW);
         }
     }
 
@@ -70,7 +104,7 @@ public class StartSimpleHttpServer {
                     }
                     handleSocket(socket);
                 } catch (Exception e) {
-                    String ex = e.getMessage();
+                    e.printStackTrace();
                 }
             }
         }
@@ -82,11 +116,11 @@ public class StartSimpleHttpServer {
         }
     }
 
-    Map<CommandEnum, Supplier<CommandHandler>> commandHandlerMap = MapBuilder.<CommandEnum, Supplier<CommandHandler>>builder().put(UPLOAD, () -> new UploadCommandHandler()).put(EXEC, () -> new ExecCommandHandler()).build();
+    Map<CommandEnum, Supplier<CommandHandler>> commandHandlerMap = MapBuilder.<CommandEnum, Supplier<CommandHandler>>builder().put(UPLOAD, () -> new UploadCommandHandler()).put(EXEC, () -> new ExecCommandHandler()).put(MD5, () -> new Md5CommandHandler()).build();
     Set<String> allPossibleCommandSet = commandHandlerMap.keySet().stream().map(Enum::name).collect(Collectors.toSet());
     int headLength = 16696;
 
-    private void handleSocket(Socket socket) throws IOException {
+    private void handleSocket(Socket socket) throws Exception {
         try (BufferedInputStream inputStream = new BufferedInputStream(socket.getInputStream(), BUFFER_SIZE);
                 BufferedOutputStream outputStream = new BufferedOutputStream(socket.getOutputStream(), BUFFER_SIZE);) {
             readInputStream(inputStream, outputStream);
@@ -95,7 +129,7 @@ public class StartSimpleHttpServer {
         }
     }
 
-    private void readInputStream(BufferedInputStream inputStream, BufferedOutputStream outputStream) throws IOException {
+    private void readInputStream(BufferedInputStream inputStream, BufferedOutputStream outputStream) throws Exception {
         ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
         int read = 0;
         do {

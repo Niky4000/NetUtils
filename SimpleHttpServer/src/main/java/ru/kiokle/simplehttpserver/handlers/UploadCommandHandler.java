@@ -4,9 +4,7 @@ import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
-import java.io.IOException;
 import static ru.kiokle.simplehttpserver.StartSimpleHttpServer.BUFFER_SIZE;
 import static ru.kiokle.simplehttpserver.StartSimpleHttpServer.endOfStream;
 import static ru.kiokle.simplehttpserver.handlers.CommandHandler.makeStandartOutput;
@@ -14,7 +12,7 @@ import static ru.kiokle.simplehttpserver.handlers.CommandHandler.makeStandartOut
 public class UploadCommandHandler implements CommandHandler {
 
     @Override
-    public void handle(ByteArrayOutputStream byteArrayOutputStream, BufferedInputStream inputStream, int length, BufferedOutputStream outputStream, int headIndex, String command) {
+    public void handle(ByteArrayOutputStream byteArrayOutputStream, BufferedInputStream inputStream, int length, BufferedOutputStream outputStream, int headIndex, String command) throws Exception {
         try (BufferedOutputStream bufferedOutputStream = new BufferedOutputStream(new FileOutputStream(new File(command)))) {
             byte[] byteArray = byteArrayOutputStream.toByteArray();
             int offset = headIndex + endOfStream.length;
@@ -31,10 +29,6 @@ public class UploadCommandHandler implements CommandHandler {
             }
             bufferedOutputStream.flush();
             makeStandartOutput(outputStream);
-        } catch (FileNotFoundException ex) {
-            throw new RuntimeException(ex);
-        } catch (IOException ex) {
-            throw new RuntimeException(ex);
         }
     }
 }
