@@ -10,14 +10,8 @@ import java.net.Socket;
 import org.junit.Assert;
 import org.junit.Test;
 import static ru.kiokle.simplehttpserver.StartSimpleHttpServer.BUFFER_SIZE;
-import static ru.kiokle.simplehttpserver.StartSimpleHttpServer.delimiter;
-import static ru.kiokle.simplehttpserver.StartSimpleHttpServer.endStr;
-import static ru.kiokle.simplehttpserver.StartSimpleHttpServer.headEndStr;
 import static ru.kiokle.simplehttpserver.clients.ExecCommandClient.createCommand;
 import static ru.kiokle.simplehttpserver.clients.UploadClient.createHead;
-import static ru.kiokle.simplehttpserver.handlers.CommandEnum.EXEC;
-import static ru.kiokle.simplehttpserver.handlers.CommandEnum.LENGTH;
-import static ru.kiokle.simplehttpserver.handlers.CommandEnum.UPLOAD;
 
 public class StartSimpleHttpServerTest {
 
