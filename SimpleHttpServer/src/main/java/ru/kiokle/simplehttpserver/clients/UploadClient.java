@@ -25,14 +25,14 @@ public class UploadClient extends I2pClient {
         this.toFile = toFile;
     }
 
-    public String createHead(long length) {
-        return UPLOAD.name() + delimiter + toFile + endStr + LENGTH.name() + delimiter + length + headEndStr;
+    public static String createHead(String targetFile, long length) {
+        return UPLOAD.name() + delimiter + targetFile + endStr + LENGTH.name() + delimiter + length + headEndStr;
     }
 
     @Override
     public void handle(BufferedOutputStream outputStream, BufferedInputStream inputStream) throws Exception {
         try (FileInputStream fileInputStream = new FileInputStream(file)) {
-            outputStream.write(makeHeadBytes(() -> createHead(file.length())));
+            outputStream.write(makeHeadBytes(() -> createHead(toFile, file.length())));
             outputStream.write(endOfStream);
             for (int i = 0; i < getIterationCount(file); i++) {
                 byte[] buffer = new byte[BUFFER_SIZE];
