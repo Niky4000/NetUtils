@@ -7,31 +7,30 @@ import java.util.concurrent.atomic.AtomicReference;
 import static ru.kiokle.simplehttpserver.StartSimpleHttpServer.delimiter;
 import static ru.kiokle.simplehttpserver.StartSimpleHttpServer.endOfStream;
 import static ru.kiokle.simplehttpserver.StartSimpleHttpServer.endStr;
-import static ru.kiokle.simplehttpserver.StartSimpleHttpServer.getConfig;
 import static ru.kiokle.simplehttpserver.StartSimpleHttpServer.headEndStr;
 import static ru.kiokle.simplehttpserver.handlers.CommandEnum.LENGTH;
 import static ru.kiokle.simplehttpserver.handlers.CommandEnum.MD5;
 
-public class Md5Client extends I2pClient {
+public class SelfPathClient extends I2pClient {
 
-    private final AtomicReference<String> md5Reference;
+    private final AtomicReference<String> selfPathReference;
 
-    public Md5Client(List<String> argList, String destinationHost, int destinationPort, int proxyPort, AtomicReference<String> md5Reference) {
+    public SelfPathClient(List<String> argList, String destinationHost, int destinationPort, int proxyPort, AtomicReference<String> md5Reference) {
         super(argList, destinationHost, destinationPort, proxyPort);
-        this.md5Reference = md5Reference;
+        this.selfPathReference = md5Reference;
     }
 
-    public static String createCommand(String command) {
-        return MD5.name() + delimiter + command + endStr + LENGTH.name() + delimiter + "0" + headEndStr;
+    public static String createCommand() {
+        return MD5.name() + delimiter + " " + endStr + LENGTH.name() + delimiter + "0" + headEndStr;
     }
 
     @Override
     public void handle(BufferedOutputStream outputStream, BufferedInputStream inputStream) throws Exception {
-        outputStream.write(makeHeadBytes(() -> createCommand(getConfig("-file", argList))));
+        outputStream.write(makeHeadBytes(() -> createCommand()));
         outputStream.write(endOfStream);
         outputStream.flush();
         String readInputStream = readInputStream(inputStream);
-        md5Reference.set(readInputStream.substring(readInputStream.lastIndexOf(endStr) + endStr.length()));
+        selfPathReference.set(readInputStream.substring(readInputStream.lastIndexOf(endStr) + endStr.length()));
         System.out.println(readInputStream);
     }
 }

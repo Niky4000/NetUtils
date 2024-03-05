@@ -16,19 +16,23 @@ import static ru.kiokle.simplehttpserver.handlers.CommandEnum.UPLOAD;
 
 public class UploadClient extends I2pClient {
 
-    public UploadClient(List<String> argList, String destinationHost, int destinationPort, int proxyPort) {
+    private final File file;
+    private final String toFile;
+
+    public UploadClient(List<String> argList, String destinationHost, int destinationPort, int proxyPort, File file, String toFile) {
         super(argList, destinationHost, destinationPort, proxyPort);
+        this.file = file;
+        this.toFile = toFile;
     }
 
-    public static String createHead(String targetFile, long length) {
-        return UPLOAD.name() + delimiter + targetFile + endStr + LENGTH.name() + delimiter + length + headEndStr;
+    public String createHead(long length) {
+        return UPLOAD.name() + delimiter + toFile + endStr + LENGTH.name() + delimiter + length + headEndStr;
     }
 
     @Override
     public void handle(BufferedOutputStream outputStream, BufferedInputStream inputStream) throws Exception {
-        File file = new File(getConfig("-file", argList));
         try (FileInputStream fileInputStream = new FileInputStream(file)) {
-            outputStream.write(makeHeadBytes(() -> createHead(file.getAbsolutePath(), file.length())));
+            outputStream.write(makeHeadBytes(() -> createHead(file.length())));
             outputStream.write(endOfStream);
             for (int i = 0; i < getIterationCount(file); i++) {
                 byte[] buffer = new byte[BUFFER_SIZE];

@@ -14,22 +14,26 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import ru.kiokle.simplehttpserver.clients.ExecCommandClient;
 import ru.kiokle.simplehttpserver.clients.Md5Client;
 import ru.kiokle.simplehttpserver.clients.PingClient;
+import ru.kiokle.simplehttpserver.clients.SelfPathClient;
 import ru.kiokle.simplehttpserver.clients.UploadClient;
 import ru.kiokle.simplehttpserver.handlers.CommandEnum;
 import static ru.kiokle.simplehttpserver.handlers.CommandEnum.EXEC;
 import static ru.kiokle.simplehttpserver.handlers.CommandEnum.LENGTH;
 import static ru.kiokle.simplehttpserver.handlers.CommandEnum.MD5;
+import static ru.kiokle.simplehttpserver.handlers.CommandEnum.SELF_PATH;
 import static ru.kiokle.simplehttpserver.handlers.CommandEnum.UPLOAD;
 import ru.kiokle.simplehttpserver.handlers.CommandHandler;
 import static ru.kiokle.simplehttpserver.handlers.CommandHandler.makeStandartOutput;
 import ru.kiokle.simplehttpserver.handlers.ExecCommandHandler;
 import ru.kiokle.simplehttpserver.handlers.Md5CommandHandler;
+import ru.kiokle.simplehttpserver.handlers.SelfPathCommandHandler;
 import ru.kiokle.simplehttpserver.handlers.UploadCommandHandler;
 import ru.kiokle.simplehttpserver.utils.FileUtils;
 import ru.kiokle.simplehttpserver.utils.MapBuilder;
@@ -38,6 +42,9 @@ import ru.kiokle.simplehttpserver.utils.WaitUtils;
 public class StartSimpleHttpServer {
 
     public static final int BUFFER_SIZE = 1024 * 10;
+    Map<CommandEnum, Supplier<CommandHandler>> commandHandlerMap = MapBuilder.<CommandEnum, Supplier<CommandHandler>>builder().put(UPLOAD, () -> new UploadCommandHandler()).put(EXEC, () -> new ExecCommandHandler()).put(MD5, () -> new Md5CommandHandler()).put(SELF_PATH, () -> new SelfPathCommandHandler()).build();
+    Set<String> allPossibleCommandSet = commandHandlerMap.keySet().stream().map(Enum::name).collect(Collectors.toSet());
+    int headLength = 16696;
 
     public static void main(String[] args) throws Exception {
         List<String> argList = Stream.of(args).collect(Collectors.toList());
@@ -55,18 +62,30 @@ public class StartSimpleHttpServer {
                 // java -agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=21044 -jar /home/me/GIT/NetUtils/SimpleHttpServer/target/SimpleHttpServer.jar -client exec -host me-virtual2.i2p -port 80 -proxyPort 4444 -command "ls -a /home/me/Distributives"
                 new I2PClient().connect(host, port, proxyPort, new ExecCommandClient(argList, host, port, proxyPort));
             } else if (client.equals("upload")) {
-                new I2PClient().connect(host, port, proxyPort, new UploadClient(argList, host, port, proxyPort));
+                new I2PClient().connect(host, port, proxyPort, new UploadClient(argList, host, port, proxyPort, new File(getConfig("-file", argList)), getConfig("-toFile", argList)));
             } else if (client.equals("md5")) {
-                // java -agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=21044 -jar /home/me/GIT/NetUtils/SimpleHttpServer/target/SimpleHttpServer.jar -client md5 -host me-virtual2.i2p -port 80 -proxyPort 4444 -file /home/me/tmp/pollResult4
-                new I2PClient().connect(host, port, proxyPort, new Md5Client(argList, host, port, proxyPort));
+                // java -agentlib:jdwp=transport=dt_socket,server=y,suspend=y,address=21044 -jar /home/me/GIT/NetUtils/SimpleHttpServer/target/SimpleHttpServer.jar -client md5 -host me-virtual2.i2p -port 80 -proxyPort 4444 -file /home/me/tmp/pollResult4
+                AtomicReference<String> md5Reference = new AtomicReference<>();
+                new I2PClient().connect(host, port, proxyPort, new Md5Client(argList, host, port, proxyPort, md5Reference));
+                System.out.println(md5Reference.get());
+            } else if (client.equals("selfPath")) {
+                // java -agentlib:jdwp=transport=dt_socket,server=y,suspend=y,address=21044 -jar /home/me/GIT/NetUtils/SimpleHttpServer/target/SimpleHttpServer.jar -client selfPath -host me-virtual2.i2p -port 80 -proxyPort 4444
+                AtomicReference<String> selfPathReference = new AtomicReference<>();
+                new I2PClient().connect(host, port, proxyPort, new SelfPathClient(argList, host, port, proxyPort, selfPathReference));
+                System.out.println(selfPathReference.get());
             } else if (client.equals("selfUpdate")) {
-                new I2PClient().connect(host, port, proxyPort, new UploadClient(argList, host, port, proxyPort));
+//                new I2PClient().connect(host, port, proxyPort, new UploadClient(argList, host, port, proxyPort));
             }
 //            new I2PClient().createServer();
         } else {
             Integer port = Integer.valueOf(getConfig("-port", argList));
             new StartSimpleHttpServer().startHttpServer(port);
         }
+    }
+
+    private void selfUpdateImpl(List<String> argList, String host, Integer port, Integer proxyPort) throws Exception {
+        File pathToJar = FileUtils.getPathToJar();
+        new I2PClient().connect(host, port, proxyPort, new UploadClient(argList, host, port, proxyPort, pathToJar, getConfig("-toFile", argList)));
     }
 
     private static final String TEMP_FILE_MARK = "_";
@@ -115,10 +134,6 @@ public class StartSimpleHttpServer {
         try (Socket socket = new Socket("127.0.0.1", port)) {
         }
     }
-
-    Map<CommandEnum, Supplier<CommandHandler>> commandHandlerMap = MapBuilder.<CommandEnum, Supplier<CommandHandler>>builder().put(UPLOAD, () -> new UploadCommandHandler()).put(EXEC, () -> new ExecCommandHandler()).put(MD5, () -> new Md5CommandHandler()).build();
-    Set<String> allPossibleCommandSet = commandHandlerMap.keySet().stream().map(Enum::name).collect(Collectors.toSet());
-    int headLength = 16696;
 
     private void handleSocket(Socket socket) throws Exception {
         try (BufferedInputStream inputStream = new BufferedInputStream(socket.getInputStream(), BUFFER_SIZE);
