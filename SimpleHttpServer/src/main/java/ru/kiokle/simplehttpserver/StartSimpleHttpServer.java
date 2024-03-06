@@ -20,6 +20,7 @@ import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import ru.kiokle.simplehttpserver.clients.ExecCommandClient;
+import ru.kiokle.simplehttpserver.clients.LogClient;
 import ru.kiokle.simplehttpserver.clients.Md5Client;
 import ru.kiokle.simplehttpserver.clients.PingClient;
 import ru.kiokle.simplehttpserver.clients.SelfPathClient;
@@ -83,6 +84,11 @@ public class StartSimpleHttpServer {
                 AtomicReference<String> selfPathReference = new AtomicReference<>();
                 new SelfPathClient(argList, host, port, proxyPort, selfPathReference).connect();
                 Logger.log(selfPathReference.get());
+            } else if (client.equals("logs")) {
+                // java -agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=21044 -jar /home/me/GIT/NetUtils/SimpleHttpServer/target/SimpleHttpServer.jar -client logs -host me-virtual2.i2p -port 80 -proxyPort 4444 -count 128
+                AtomicReference<String> logsReference = new AtomicReference<>();
+                new LogClient(argList, host, port, proxyPort, Integer.valueOf(getConfig("-count", argList)), logsReference).connect();
+                Logger.log(logsReference.get());
             } else if (client.equals("selfUpdate")) {
                 // java -agentlib:jdwp=transport=dt_socket,server=y,suspend=y,address=21044 -jar /home/me/GIT/NetUtils/SimpleHttpServer/target/SimpleHttpServer.jar -client selfUpdate -host me-virtual2.i2p -port 80 -proxyPort 4444
                 selfUpdateImpl(argList, host, port, proxyPort);

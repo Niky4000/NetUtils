@@ -3,7 +3,6 @@ package ru.kiokle.simplehttpserver.handlers;
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
 import java.io.ByteArrayOutputStream;
-import java.io.File;
 import static ru.kiokle.simplehttpserver.StartSimpleHttpServer.localArgs;
 import ru.kiokle.simplehttpserver.utils.FileUtils;
 
