@@ -215,6 +215,8 @@ public class StartSimpleHttpServer {
         try (BufferedInputStream inputStream = new BufferedInputStream(socket.getInputStream(), BUFFER_SIZE);
                 BufferedOutputStream outputStream = new BufferedOutputStream(socket.getOutputStream(), BUFFER_SIZE);) {
             readInputStream(inputStream, outputStream);
+        } catch (Exception e) {
+            e.printStackTrace();
         } finally {
             socket.close();
         }
@@ -234,6 +236,9 @@ public class StartSimpleHttpServer {
 //                    break;
 //                }
                 read = inputStream.read(buffer);
+                if (read < 0 && !stop) {
+                    break;
+                }
                 byteArrayOutputStream.write(buffer, 0, read);
                 startOfStreamContains = contains(byteArrayOutputStream.toByteArray(), startOfStream.getBytes(), 0);
                 if (startOfStreamContains > 0) {
@@ -245,8 +250,9 @@ public class StartSimpleHttpServer {
 //            Logger.log(new String(byteArrayOutputStream.toByteArray()));
             Entry<String, Integer> headEntry = getHead(byteArrayOutputStream.toByteArray());
             if (headEntry == null) {
-                Logger.log("standartOutput");
-                makeStandartOutput(outputStream);
+                String request = new String(byteArrayOutputStream.toByteArray());
+                Logger.log(getHttpMethod(request));
+                makeStandartOutput(outputStream, request);
                 break;
             }
             String head = headEntry.getKey();
@@ -265,6 +271,14 @@ public class StartSimpleHttpServer {
                 break;
             }
         } while (read > 0);
+    }
+
+    private String getHttpMethod(String request) {
+        try {
+            return request.substring(0, request.indexOf(endStr));
+        } catch (Exception e) {
+            return request;
+        }
     }
 
     private void print(ByteArrayOutputStream byteArrayOutputStream) {

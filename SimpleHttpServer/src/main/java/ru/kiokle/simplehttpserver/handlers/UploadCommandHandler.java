@@ -28,7 +28,10 @@ public class UploadCommandHandler implements CommandHandler {
                 estimatedBytes -= read2;
             }
             bufferedOutputStream.flush();
-            makeStandartOutput(outputStream);
+            StringBuilder headers = getHeaders();
+            headers.append(command + " was uploaded!");
+            outputStream.write(headers.toString().getBytes());
+            outputStream.flush();
         }
     }
 }
