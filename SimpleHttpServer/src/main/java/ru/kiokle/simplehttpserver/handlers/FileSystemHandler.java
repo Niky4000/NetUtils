@@ -11,8 +11,8 @@ import ru.kiokle.simplehttpserver.utils.FileUtils;
 
 public class FileSystemHandler {
 
-    static final String pathVariableName = "path=";
-    static final String backVariableName = "back=";
+    private static final String pathVariableName = "path=";
+    private static final String backVariableName = "back=";
 
     public String getData(String request) throws IOException {
         File baseDir = getPathFromRequest(request, pathVariableName);
@@ -35,7 +35,7 @@ public class FileSystemHandler {
             if (file.isDirectory()) {
                 stringBuilder.append("<tr><td><a href=\"/?");
                 stringBuilder.append(pathVariableName);
-                stringBuilder.append(file.getAbsolutePath());
+                stringBuilder.append(file.getAbsolutePath().replace("/", "%2F").replace(":", "%3A").replace("\\", "%5C"));
                 stringBuilder.append("\">");
                 stringBuilder.append(file.getAbsolutePath());
                 stringBuilder.append("</td><td>Dir</td></tr>").append(endStr2).append(endStr);
