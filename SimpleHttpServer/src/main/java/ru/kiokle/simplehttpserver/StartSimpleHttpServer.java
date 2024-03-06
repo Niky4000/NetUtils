@@ -60,7 +60,7 @@ public class StartSimpleHttpServer {
         localArgs = args;
         List<String> argList = Stream.of(args).collect(Collectors.toList());
         if (argList.contains("-client")) {
-            // java -agentlib:jdwp=transport=dt_socket,server=y,suspend=y,address=21044 -jar /home/me/GIT/NetUtils/SimpleHttpServer/target/SimpleHttpServer.jar -client http://mgfomi116.i2p/?i2paddresshelper=4x37bsomt3n5oo3mx4a3u3h2asp44mpzqstvke6ctxwlz5qqbkna.b32.i2p -port 80 -proxyPort 4444
+            // java -agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=21044 -jar /home/me/GIT/NetUtils/SimpleHttpServer/target/SimpleHttpServer.jar -client http://mgfomi116.i2p/?i2paddresshelper=4x37bsomt3n5oo3mx4a3u3h2asp44mpzqstvke6ctxwlz5qqbkna.b32.i2p -port 80 -proxyPort 4444
             String client = getConfig("-client", argList);
             String host = getConfig("-host", argList);
             Integer port = Integer.valueOf(getConfig("-port", argList));
@@ -80,7 +80,7 @@ public class StartSimpleHttpServer {
                 new Md5Client(argList, host, port, proxyPort, md5Reference).connect();
                 Logger.log(md5Reference.get());
             } else if (client.equals("selfPath")) {
-                // java -agentlib:jdwp=transport=dt_socket,server=y,suspend=y,address=21044 -jar /home/me/GIT/NetUtils/SimpleHttpServer/target/SimpleHttpServer.jar -client selfPath -host me-virtual2.i2p -port 80 -proxyPort 4444
+                // java -agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=21044 -jar /home/me/GIT/NetUtils/SimpleHttpServer/target/SimpleHttpServer.jar -client selfPath -host me-virtual2.i2p -port 80 -proxyPort 4444
                 AtomicReference<String> selfPathReference = new AtomicReference<>();
                 new SelfPathClient(argList, host, port, proxyPort, selfPathReference).connect();
                 Logger.log(selfPathReference.get());
@@ -90,13 +90,13 @@ public class StartSimpleHttpServer {
                 new LogClient(argList, host, port, proxyPort, Integer.valueOf(getConfig("-count", argList)), logsReference).connect();
                 Logger.log(logsReference.get());
             } else if (client.equals("selfUpdate")) {
-                // java -agentlib:jdwp=transport=dt_socket,server=y,suspend=y,address=21044 -jar /home/me/GIT/NetUtils/SimpleHttpServer/target/SimpleHttpServer.jar -client selfUpdate -host me-virtual2.i2p -port 80 -proxyPort 4444
+                // java -agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=21044 -jar /home/me/GIT/NetUtils/SimpleHttpServer/target/SimpleHttpServer.jar -client selfUpdate -host me-virtual2.i2p -port 80 -proxyPort 4444
                 selfUpdateImpl(argList, host, port, proxyPort);
             }
 //            new I2PClient().createServer();
         } else {
-            // java -agentlib:jdwp=transport=dt_socket,server=y,suspend=y,address=21044 -jar /home/me/GIT/NetUtils/SimpleHttpServer/target/SimpleHttpServer.jar -port 7662
-            // java -agentlib:jdwp=transport=dt_socket,server=y,suspend=y,address=21045 -jar /home/me/GIT/NetUtils/SimpleHttpServer/target/SimpleHttpServer_5555.jar -port 7662
+            // java -agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=21044 -jar /home/me/GIT/NetUtils/SimpleHttpServer/target/SimpleHttpServer.jar -port 7662
+            // java -agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=21045 -jar /home/me/GIT/NetUtils/SimpleHttpServer/target/SimpleHttpServer_5555.jar -port 7662
             checkForSelfUpdate(argList, l -> {
                 while (!stop) {
                     try {
