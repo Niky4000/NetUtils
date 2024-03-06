@@ -164,7 +164,7 @@ public class StartSimpleHttpServer {
                 }
             }
             Files.write(file.toPath(), Files.readAllBytes(pathToJar.toPath()), StandardOpenOption.CREATE_NEW);
-            FileUtils.launchSelf(argList.toArray(String[]::new), file.getAbsoluteFile().toPath());
+            FileUtils.launchSelf(argList.toArray(new String[1]), file.getAbsoluteFile().toPath());
         } else {
             lookupForTempFilesAndRemoveThem();
             argListConsumer.accept(argList);
