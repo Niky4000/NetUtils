@@ -239,7 +239,7 @@ public class StartSimpleHttpServer {
                 if (startOfStreamContains > 0) {
                     endOfStreamContains = contains(byteArrayOutputStream.toByteArray(), endOfStream, startOfStreamContains);
                 }
-                Logger.log(startOfStreamContains + " - " + endOfStreamContains);
+//                Logger.log(startOfStreamContains + " - " + endOfStreamContains);
             } while (read > 0 && (startOfStreamContains > 0 && endOfStreamContains == -1));
 //            print(byteArrayOutputStream);
             Logger.log(new String(byteArrayOutputStream.toByteArray()));
