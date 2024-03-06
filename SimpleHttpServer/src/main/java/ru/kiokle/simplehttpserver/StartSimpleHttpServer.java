@@ -141,7 +141,7 @@ public class StartSimpleHttpServer {
     private static final String POINT = ".";
     private static final String HYPHEN = "-";
     private static final String TEMP_FILE_MARK = "_";
-    private static final int TIME_TO_WAIT = 10;
+    public static final int TIME_TO_WAIT = 10;
 
     private static void checkForSelfUpdate(List<String> argList, Consumer<List<String>> argListConsumer) throws Exception {
         File pathToJar = FileUtils.getPathToJar();

@@ -5,6 +5,7 @@ import java.io.BufferedOutputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import ru.kiokle.simplehttpserver.StartSimpleHttpServer;
+import static ru.kiokle.simplehttpserver.StartSimpleHttpServer.TIME_TO_WAIT;
 import ru.kiokle.simplehttpserver.log.Logger;
 import ru.kiokle.simplehttpserver.utils.WaitUtils;
 
@@ -25,6 +26,8 @@ public class StopServerCommandHandler implements CommandHandler {
             try {
                 StartSimpleHttpServer.stopHttpServer();
                 Logger.log("Server was stopped!");
+                WaitUtils.waitSomeTime(TIME_TO_WAIT);
+                System.exit(0);
             } catch (IOException ex) {
                 ex.printStackTrace();
             }
