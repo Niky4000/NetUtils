@@ -12,6 +12,7 @@ import static ru.kiokle.simplehttpserver.StartSimpleHttpServer.endStr;
 import static ru.kiokle.simplehttpserver.StartSimpleHttpServer.headEndStr;
 import static ru.kiokle.simplehttpserver.handlers.CommandEnum.LENGTH;
 import static ru.kiokle.simplehttpserver.handlers.CommandEnum.UPLOAD;
+import ru.kiokle.simplehttpserver.log.Logger;
 
 public class UploadClient extends I2pClient {
 
@@ -41,7 +42,7 @@ public class UploadClient extends I2pClient {
             outputStream.flush();
         }
         String readInputStream = readInputStream(inputStream);
-        System.out.println(readInputStream);
+        Logger.log(readInputStream);
     }
 
     private int getIterationCount(File file) {

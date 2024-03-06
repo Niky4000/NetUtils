@@ -12,6 +12,7 @@ import org.junit.Test;
 import static ru.kiokle.simplehttpserver.StartSimpleHttpServer.BUFFER_SIZE;
 import static ru.kiokle.simplehttpserver.clients.ExecCommandClient.createCommand;
 import static ru.kiokle.simplehttpserver.clients.UploadClient.createHead;
+import ru.kiokle.simplehttpserver.log.Logger;
 
 public class StartSimpleHttpServerTest {
 
@@ -37,7 +38,7 @@ public class StartSimpleHttpServerTest {
                 }
                 outputStream.flush();
                 byte[] readInputStream = readInputStream(inputStream);
-                System.out.println(new String(readInputStream));
+                Logger.log(new String(readInputStream));
             }
             simpleHttpServer.stopHttpServer();
             listerner.join();
@@ -66,7 +67,7 @@ public class StartSimpleHttpServerTest {
             if (readInputStream.length > 0) {
                 input = new String(readInputStream);
             }
-            System.out.println(input);
+            Logger.log(input);
         }
         simpleHttpServer.stopHttpServer();
         listerner.join();

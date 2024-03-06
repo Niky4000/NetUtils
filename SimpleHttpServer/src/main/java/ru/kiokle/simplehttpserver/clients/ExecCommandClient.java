@@ -6,10 +6,10 @@ import java.util.List;
 import static ru.kiokle.simplehttpserver.StartSimpleHttpServer.delimiter;
 import static ru.kiokle.simplehttpserver.StartSimpleHttpServer.endOfStream;
 import static ru.kiokle.simplehttpserver.StartSimpleHttpServer.endStr;
-import static ru.kiokle.simplehttpserver.StartSimpleHttpServer.getConfig;
 import static ru.kiokle.simplehttpserver.StartSimpleHttpServer.headEndStr;
 import static ru.kiokle.simplehttpserver.handlers.CommandEnum.EXEC;
 import static ru.kiokle.simplehttpserver.handlers.CommandEnum.LENGTH;
+import ru.kiokle.simplehttpserver.log.Logger;
 
 public class ExecCommandClient extends I2pClient {
 
@@ -30,6 +30,6 @@ public class ExecCommandClient extends I2pClient {
         outputStream.write(endOfStream);
         outputStream.flush();
         String readInputStream = readInputStream(inputStream);
-        System.out.println(readInputStream);
+        Logger.log(readInputStream);
     }
 }

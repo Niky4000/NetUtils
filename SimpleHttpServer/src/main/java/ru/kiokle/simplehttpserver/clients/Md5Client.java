@@ -11,6 +11,7 @@ import static ru.kiokle.simplehttpserver.StartSimpleHttpServer.getConfig;
 import static ru.kiokle.simplehttpserver.StartSimpleHttpServer.headEndStr;
 import static ru.kiokle.simplehttpserver.handlers.CommandEnum.LENGTH;
 import static ru.kiokle.simplehttpserver.handlers.CommandEnum.MD5;
+import ru.kiokle.simplehttpserver.log.Logger;
 
 public class Md5Client extends I2pClient {
 
@@ -32,6 +33,6 @@ public class Md5Client extends I2pClient {
         outputStream.flush();
         String readInputStream = readInputStream(inputStream);
         md5Reference.set(readInputStream.substring(readInputStream.lastIndexOf(endStr) + endStr.length()));
-        System.out.println(readInputStream);
+        Logger.log(readInputStream);
     }
 }

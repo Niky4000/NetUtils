@@ -3,6 +3,7 @@ package ru.kiokle.simplehttpserver.clients;
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
 import java.util.List;
+import ru.kiokle.simplehttpserver.log.Logger;
 
 public class PingClient extends I2pClient {
 
@@ -20,6 +21,6 @@ public class PingClient extends I2pClient {
         outputStream.write(str.getBytes());
         outputStream.flush();
         String readInputStream = readInputStream(inputStream);
-        System.out.println(readInputStream != null ? readInputStream : "readInputStream is empty!");
+        Logger.log(readInputStream != null ? readInputStream : "readInputStream is empty!");
     }
 }

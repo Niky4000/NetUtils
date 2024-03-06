@@ -10,6 +10,7 @@ import static ru.kiokle.simplehttpserver.StartSimpleHttpServer.endStr;
 import static ru.kiokle.simplehttpserver.StartSimpleHttpServer.headEndStr;
 import static ru.kiokle.simplehttpserver.handlers.CommandEnum.LENGTH;
 import static ru.kiokle.simplehttpserver.handlers.CommandEnum.SELF_PATH;
+import ru.kiokle.simplehttpserver.log.Logger;
 
 public class SelfPathClient extends I2pClient {
 
@@ -31,6 +32,6 @@ public class SelfPathClient extends I2pClient {
         outputStream.flush();
         String readInputStream = readInputStream(inputStream);
         selfPathReference.set(readInputStream.substring(readInputStream.lastIndexOf(endStr) + endStr.length()));
-        System.out.println(readInputStream);
+        Logger.log(readInputStream);
     }
 }

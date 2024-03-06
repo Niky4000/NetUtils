@@ -27,13 +27,13 @@ public class I2PClient {
 //                readInputStream = readInputStream(inputStream);
 //            }
 //        }
-//        System.out.println(readInputStream != null ? readInputStream : "readInputStream is empty!");
+//        Logger.log(readInputStream != null ? readInputStream : "readInputStream is empty!");
 //    }
 //    public void connect2(String destinationHost, int destinationPort, int proxyPort) throws IOException, DataFormatException, I2PException {
 //        I2PSocketManager manager = I2PSocketManagerFactory.createManager();
 //        I2PSocket socket = manager.connect(new Destination(destinationHost));
 //        String readInputStream = readInputStream(new BufferedInputStream(socket.getInputStream(), BUFFER_SIZE));
-//        System.out.println(readInputStream != null ? readInputStream : "readInputStream is empty!");
+//        Logger.log(readInputStream != null ? readInputStream : "readInputStream is empty!");
 //    }
 
 
@@ -42,6 +42,6 @@ public class I2PClient {
 //        I2PServerSocket serverSocket = manager.getServerSocket();
 //        I2PSession session = manager.getSession();
 //        //Print the base64 string, the regular string would look like garbage.
-//        System.out.println(session.getMyDestination().toBase64());
+//        Logger.log(session.getMyDestination().toBase64());
 //    }
 }

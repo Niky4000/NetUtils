@@ -28,6 +28,7 @@ import ru.kiokle.simplehttpserver.clients.UploadClient;
 import ru.kiokle.simplehttpserver.handlers.CommandEnum;
 import static ru.kiokle.simplehttpserver.handlers.CommandEnum.EXEC;
 import static ru.kiokle.simplehttpserver.handlers.CommandEnum.LENGTH;
+import static ru.kiokle.simplehttpserver.handlers.CommandEnum.LOG;
 import static ru.kiokle.simplehttpserver.handlers.CommandEnum.MD5;
 import static ru.kiokle.simplehttpserver.handlers.CommandEnum.SELF_PATH;
 import static ru.kiokle.simplehttpserver.handlers.CommandEnum.STOP;
@@ -35,18 +36,21 @@ import static ru.kiokle.simplehttpserver.handlers.CommandEnum.UPLOAD;
 import ru.kiokle.simplehttpserver.handlers.CommandHandler;
 import static ru.kiokle.simplehttpserver.handlers.CommandHandler.makeStandartOutput;
 import ru.kiokle.simplehttpserver.handlers.ExecCommandHandler;
+import ru.kiokle.simplehttpserver.handlers.LogsCommandHandler;
 import ru.kiokle.simplehttpserver.handlers.Md5CommandHandler;
 import ru.kiokle.simplehttpserver.handlers.SelfPathCommandHandler;
 import ru.kiokle.simplehttpserver.handlers.StopServerCommandHandler;
 import ru.kiokle.simplehttpserver.handlers.UploadCommandHandler;
+import ru.kiokle.simplehttpserver.log.Logger;
 import ru.kiokle.simplehttpserver.utils.FileUtils;
+import static ru.kiokle.simplehttpserver.utils.FileUtils.incrementAddress;
 import ru.kiokle.simplehttpserver.utils.MapBuilder;
 import ru.kiokle.simplehttpserver.utils.WaitUtils;
 
 public class StartSimpleHttpServer {
 
     public static final int BUFFER_SIZE = 1024 * 10;
-    private final Map<CommandEnum, Supplier<CommandHandler>> commandHandlerMap = MapBuilder.<CommandEnum, Supplier<CommandHandler>>builder().put(UPLOAD, () -> new UploadCommandHandler()).put(EXEC, () -> new ExecCommandHandler()).put(MD5, () -> new Md5CommandHandler()).put(SELF_PATH, () -> new SelfPathCommandHandler()).put(STOP, () -> new StopServerCommandHandler()).build();
+    private final Map<CommandEnum, Supplier<CommandHandler>> commandHandlerMap = MapBuilder.<CommandEnum, Supplier<CommandHandler>>builder().put(UPLOAD, () -> new UploadCommandHandler()).put(EXEC, () -> new ExecCommandHandler()).put(MD5, () -> new Md5CommandHandler()).put(SELF_PATH, () -> new SelfPathCommandHandler()).put(LOG, () -> new LogsCommandHandler()).put(STOP, () -> new StopServerCommandHandler()).build();
     Set<String> allPossibleCommandSet = commandHandlerMap.keySet().stream().map(Enum::name).collect(Collectors.toSet());
     private static final int headLength = 16696;
     public static volatile String[] localArgs;
@@ -73,12 +77,12 @@ public class StartSimpleHttpServer {
                 // java -agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=21044 -jar /home/me/GIT/NetUtils/SimpleHttpServer/target/SimpleHttpServer.jar -client md5 -host me-virtual2.i2p -port 80 -proxyPort 4444 -file /home/me/tmp/pollResult4
                 AtomicReference<String> md5Reference = new AtomicReference<>();
                 new Md5Client(argList, host, port, proxyPort, md5Reference).connect();
-                System.out.println(md5Reference.get());
+                Logger.log(md5Reference.get());
             } else if (client.equals("selfPath")) {
                 // java -agentlib:jdwp=transport=dt_socket,server=y,suspend=y,address=21044 -jar /home/me/GIT/NetUtils/SimpleHttpServer/target/SimpleHttpServer.jar -client selfPath -host me-virtual2.i2p -port 80 -proxyPort 4444
                 AtomicReference<String> selfPathReference = new AtomicReference<>();
                 new SelfPathClient(argList, host, port, proxyPort, selfPathReference).connect();
-                System.out.println(selfPathReference.get());
+                Logger.log(selfPathReference.get());
             } else if (client.equals("selfUpdate")) {
                 // java -agentlib:jdwp=transport=dt_socket,server=y,suspend=y,address=21044 -jar /home/me/GIT/NetUtils/SimpleHttpServer/target/SimpleHttpServer.jar -client selfUpdate -host me-virtual2.i2p -port 80 -proxyPort 4444
                 selfUpdateImpl(argList, host, port, proxyPort);
@@ -94,7 +98,7 @@ public class StartSimpleHttpServer {
                     } catch (IOException ex) {
                         ex.printStackTrace();
                         WaitUtils.waitSomeTime(TIME_TO_WAIT);
-                        System.out.println("Waiting...");
+                        Logger.log("Waiting...");
                         continue;
                     }
                 }
@@ -107,27 +111,11 @@ public class StartSimpleHttpServer {
         new SelfPathClient(argList, host, port, proxyPort, selfPathReference).connect();
         String remoteSelfPath = getRemoteSelfPathFromRemoteCommandLineArgument(selfPathReference.get());
         String newSelfTempFileName = createSelfTempFileName(remoteSelfPath);
-        System.out.println(newSelfTempFileName);
+        Logger.log(newSelfTempFileName);
         File pathToJar = FileUtils.getPathToJar();
         new UploadClient(argList, host, port, proxyPort, pathToJar, newSelfTempFileName).connect();
         String remoteExecCommand = incrementAddress(selfPathReference.get().replace(remoteSelfPath, newSelfTempFileName));
         new ExecCommandClient(argList, host, port, proxyPort, remoteExecCommand).connect();
-    }
-
-    private static final String address = "address=";
-
-    private static String incrementAddress(String commandLineArgument) {
-        if (commandLineArgument.contains(address)) {
-            int addressIndex = commandLineArgument.indexOf(address);
-            int endIndex = commandLineArgument.indexOf(" ", addressIndex + address.length());
-            String portStr = commandLineArgument.substring(addressIndex + address.length(), endIndex);
-            Integer debugPort = Integer.valueOf(portStr);
-            debugPort++;
-            String newCommandLineArgument = commandLineArgument.replace(portStr, debugPort.toString());
-            return newCommandLineArgument;
-        } else {
-            return commandLineArgument;
-        }
     }
 
     private static final String JAR = "-jar";
@@ -156,8 +144,9 @@ public class StartSimpleHttpServer {
             try {
                 new StopServerClient(argList, "localhost", Integer.valueOf(getConfig("-port", argList))).connect();
             } catch (Exception e) {
-                System.out.println("There is no client launched!");
+                Logger.log("There is no client launched!");
             }
+            WaitUtils.waitSomeTime(TIME_TO_WAIT);
             String newName = pathToJar.getParentFile().getAbsolutePath() + File.separator + name.substring(0, name.indexOf(TEMP_FILE_MARK)) + name.substring(name.indexOf(POINT));
             File file = new File(newName);
             while (file.exists()) {
@@ -234,7 +223,7 @@ public class StartSimpleHttpServer {
             int endOfStreamContains = -1;
             do {
 //                int available = inputStream.available();
-//                System.out.println("available = " + available);
+//                Logger.log("available = " + available);
 //                if (available <= 0) {
 //                    break;
 //                }
@@ -244,7 +233,7 @@ public class StartSimpleHttpServer {
                 if (startOfStreamContains > 0) {
                     endOfStreamContains = contains(byteArrayOutputStream.toByteArray(), endOfStream, startOfStreamContains);
                 }
-                System.out.println(startOfStreamContains + " - " + endOfStreamContains);
+                Logger.log(startOfStreamContains + " - " + endOfStreamContains);
             } while (read > 0 && (startOfStreamContains > 0 && endOfStreamContains == -1));
             print(byteArrayOutputStream);
             Entry<String, Integer> headEntry = getHead(byteArrayOutputStream.toByteArray());
@@ -275,7 +264,7 @@ public class StartSimpleHttpServer {
         for (byte b : array) {
             stringBuilder.append(byteToHex(b));
         }
-        System.out.println(stringBuilder.toString());
+        Logger.log(stringBuilder.toString());
     }
 
     public String byteToHex(byte num) {

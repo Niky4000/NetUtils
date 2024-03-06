@@ -9,6 +9,7 @@ import java.security.MessageDigest;
 import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Stream;
+import ru.kiokle.simplehttpserver.log.Logger;
 
 public class FileUtils {
 
@@ -86,7 +87,7 @@ public class FileUtils {
 
     public static Process launchSelf(String[] args, Path to) throws IOException {
         String exec = getLaunchArguments(args, to);
-        System.out.println(exec);
+        Logger.log(exec);
         Process process = Runtime.getRuntime().exec(exec);
         return process;
     }
@@ -95,7 +96,23 @@ public class FileUtils {
         List<String> inputArguments = ManagementFactory.getRuntimeMXBean().getInputArguments();
         String commandLineOptions = inputArguments.stream().reduce("", (str1, str2) -> str1 + " " + str2);
         String commandLineArguments = Stream.of(args).reduce("", (str1, str2) -> str1 + " " + str2);
-        String exec = "java" + commandLineOptions + " -jar " + to.toFile().getAbsolutePath() + commandLineArguments;
+        String exec = incrementAddress("java" + commandLineOptions + " -jar " + to.toFile().getAbsolutePath() + commandLineArguments);
         return exec;
+    }
+
+    private static final String address = "address=";
+
+    public static String incrementAddress(String commandLineArgument) {
+        if (commandLineArgument.contains(address)) {
+            int addressIndex = commandLineArgument.indexOf(address);
+            int endIndex = commandLineArgument.indexOf(" ", addressIndex + address.length());
+            String portStr = commandLineArgument.substring(addressIndex + address.length(), endIndex);
+            Integer debugPort = Integer.valueOf(portStr);
+            debugPort++;
+            String newCommandLineArgument = commandLineArgument.replace(portStr, debugPort.toString());
+            return newCommandLineArgument;
+        } else {
+            return commandLineArgument;
+        }
     }
 }

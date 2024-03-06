@@ -9,6 +9,7 @@ import static ru.kiokle.simplehttpserver.StartSimpleHttpServer.endStr;
 import static ru.kiokle.simplehttpserver.StartSimpleHttpServer.headEndStr;
 import static ru.kiokle.simplehttpserver.handlers.CommandEnum.LENGTH;
 import static ru.kiokle.simplehttpserver.handlers.CommandEnum.STOP;
+import ru.kiokle.simplehttpserver.log.Logger;
 
 public class StopServerClient extends Client {
 
@@ -26,6 +27,6 @@ public class StopServerClient extends Client {
         outputStream.write(endOfStream);
         outputStream.flush();
         String readInputStream = readInputStream(inputStream);
-        System.out.println(readInputStream);
+        Logger.log(readInputStream);
     }
 }
