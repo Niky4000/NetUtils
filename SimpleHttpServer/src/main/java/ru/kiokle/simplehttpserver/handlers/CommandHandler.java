@@ -4,10 +4,6 @@ import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.io.InputStream;
-import java.text.SimpleDateFormat;
-import java.util.Date;
-import ru.kiokle.simplehttpserver.utils.FileUtils;
 
 public interface CommandHandler {
 
