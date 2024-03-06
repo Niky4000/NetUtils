@@ -46,9 +46,9 @@ import ru.kiokle.simplehttpserver.utils.WaitUtils;
 public class StartSimpleHttpServer {
 
     public static final int BUFFER_SIZE = 1024 * 10;
-    Map<CommandEnum, Supplier<CommandHandler>> commandHandlerMap = MapBuilder.<CommandEnum, Supplier<CommandHandler>>builder().put(UPLOAD, () -> new UploadCommandHandler()).put(EXEC, () -> new ExecCommandHandler()).put(MD5, () -> new Md5CommandHandler()).put(SELF_PATH, () -> new SelfPathCommandHandler()).put(STOP, () -> new StopServerCommandHandler()).build();
+    private final Map<CommandEnum, Supplier<CommandHandler>> commandHandlerMap = MapBuilder.<CommandEnum, Supplier<CommandHandler>>builder().put(UPLOAD, () -> new UploadCommandHandler()).put(EXEC, () -> new ExecCommandHandler()).put(MD5, () -> new Md5CommandHandler()).put(SELF_PATH, () -> new SelfPathCommandHandler()).put(STOP, () -> new StopServerCommandHandler()).build();
     Set<String> allPossibleCommandSet = commandHandlerMap.keySet().stream().map(Enum::name).collect(Collectors.toSet());
-    int headLength = 16696;
+    private static final int headLength = 16696;
     public static volatile String[] localArgs;
 
     public static void main(String[] args) throws Exception {
@@ -195,15 +195,17 @@ public class StartSimpleHttpServer {
         this.port = port;
         try (ServerSocket serverSocket = new ServerSocket(port)) {
             while (true) {
-                try {
-                    Socket socket = serverSocket.accept();
-                    if (stop) {
-                        break;
-                    }
-                    handleSocket(socket);
-                } catch (Exception e) {
-                    e.printStackTrace();
+                Socket socket = serverSocket.accept();
+                if (stop) {
+                    break;
                 }
+                new Thread(() -> {
+                    try {
+                        handleSocket(socket);
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                    }
+                }).start();
             }
         }
     }
