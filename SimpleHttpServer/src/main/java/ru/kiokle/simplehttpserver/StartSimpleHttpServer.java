@@ -242,9 +242,10 @@ public class StartSimpleHttpServer {
 //                Logger.log(startOfStreamContains + " - " + endOfStreamContains);
             } while (read > 0 && (startOfStreamContains > 0 && endOfStreamContains == -1));
 //            print(byteArrayOutputStream);
-            Logger.log(new String(byteArrayOutputStream.toByteArray()));
+//            Logger.log(new String(byteArrayOutputStream.toByteArray()));
             Entry<String, Integer> headEntry = getHead(byteArrayOutputStream.toByteArray());
             if (headEntry == null) {
+                Logger.log("standartOutput");
                 makeStandartOutput(outputStream);
                 break;
             }
@@ -258,6 +259,7 @@ public class StartSimpleHttpServer {
             if (length < 0) {
                 break;
             }
+            Logger.log("command: " + command.getKey() + " value: " + command.getValue() + "!");
             commandHandlerMap.get(command.getKey()).get().handle(byteArrayOutputStream, inputStream, length, outputStream, headIndex, command.getValue());
             if (read < BUFFER_SIZE) {
                 break;

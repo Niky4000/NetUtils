@@ -11,7 +11,7 @@ import java.util.List;
 public class Logger {
 
     private static Deque<String> logList = new LinkedList<>();
-    public static final int MAX_LOG_SIZE = 2048;
+    public static final int MAX_LOG_SIZE = 256;
 
     public static void log(String message) {
         String logMessage = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss_SSS").format(new Date()) + ": " + message;
