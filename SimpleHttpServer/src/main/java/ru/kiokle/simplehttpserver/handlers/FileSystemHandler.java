@@ -26,7 +26,7 @@ public class FileSystemHandler {
     }
 
     private boolean isParentDir(String request) {
-        return request.contains(backVariableName);
+        return request.substring(0, request.indexOf(endStr)).contains(backVariableName);
     }
 
     private String getFileSystemTable(File baseDir) {
