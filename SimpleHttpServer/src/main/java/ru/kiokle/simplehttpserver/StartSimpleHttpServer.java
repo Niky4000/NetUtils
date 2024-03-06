@@ -241,7 +241,8 @@ public class StartSimpleHttpServer {
                 }
                 Logger.log(startOfStreamContains + " - " + endOfStreamContains);
             } while (read > 0 && (startOfStreamContains > 0 && endOfStreamContains == -1));
-            print(byteArrayOutputStream);
+//            print(byteArrayOutputStream);
+            Logger.log(new String(byteArrayOutputStream.toByteArray()));
             Entry<String, Integer> headEntry = getHead(byteArrayOutputStream.toByteArray());
             if (headEntry == null) {
                 makeStandartOutput(outputStream);
