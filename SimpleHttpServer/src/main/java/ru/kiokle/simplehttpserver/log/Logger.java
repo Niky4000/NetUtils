@@ -13,7 +13,7 @@ public class Logger {
     private static final int MAX_LOG_SIZE = 2048;
 
     public static void log(String message) {
-        String logMessage = new SimpleDateFormat("yyyy-MM-dd").format(new Date()) + ": " + message;
+        String logMessage = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss_SSS").format(new Date()) + ": " + message;
         System.out.println(logMessage);
         synchronized (Logger.class) {
             logList.addFirst(logMessage);
