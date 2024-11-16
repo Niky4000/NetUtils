@@ -1,5 +1,6 @@
 package ru.kiokle.simplehttpserver.utils;
 
+import java.io.BufferedInputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -113,6 +114,16 @@ public class FileUtils {
             return newCommandLineArgument;
         } else {
             return commandLineArgument;
+        }
+    }
+
+    public static final int LOCAL_BUFFER_SIZE = 1024 * 1024;
+
+    public static byte[] readAllBytesFromResource(Class cl, String resourcePath) throws IOException {
+        try (BufferedInputStream resourceAsStream = new BufferedInputStream(cl.getClassLoader().getResourceAsStream(resourcePath), LOCAL_BUFFER_SIZE)) {
+            byte[] buffer = new byte[resourceAsStream.available()];
+            resourceAsStream.read(buffer);
+            return buffer;
         }
     }
 }

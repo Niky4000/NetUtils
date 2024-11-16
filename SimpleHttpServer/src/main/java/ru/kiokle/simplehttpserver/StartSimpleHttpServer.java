@@ -20,6 +20,7 @@ import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import ru.kiokle.simplehttpserver.clients.ExecCommandClient;
+import ru.kiokle.simplehttpserver.clients.ExecCommandLocalClient;
 import ru.kiokle.simplehttpserver.clients.LogClient;
 import ru.kiokle.simplehttpserver.clients.Md5Client;
 import ru.kiokle.simplehttpserver.clients.PingClient;
@@ -65,13 +66,18 @@ public class StartSimpleHttpServer {
             String host = getConfig("-host", argList);
             Integer port = Integer.valueOf(getConfig("-port", argList));
             Integer proxyPort = Integer.valueOf(getConfig("-proxyPort", argList));
+            boolean localNetwork = argList.contains("-local");
             if (client.equals("ping")) {
                 // java -agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=21044 -jar /home/me/GIT/NetUtils/SimpleHttpServer/target/SimpleHttpServer.jar -client ping -host mgfomi116.i2p -port 80 -proxyPort 4444
                 // java -agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=21044 -jar /home/me/GIT/NetUtils/SimpleHttpServer/target/SimpleHttpServer.jar -client ping -host me-virtual2.i2p -port 80 -proxyPort 4444
                 new PingClient(argList, host, port, proxyPort).connect();
             } else if (client.equals("exec")) {
                 // java -agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=21044 -jar /home/me/GIT/NetUtils/SimpleHttpServer/target/SimpleHttpServer.jar -client exec -host me-virtual2.i2p -port 80 -proxyPort 4444 -command "ls -a /home/me/Distributives"
-                new ExecCommandClient(argList, host, port, proxyPort, getConfig("-command", argList)).connect();
+                if (!localNetwork) {
+                    new ExecCommandClient(argList, host, port, proxyPort, getConfig("-command", argList)).connect();
+                } else {
+                    new ExecCommandLocalClient(argList, host, port, client).connect();
+                }
             } else if (client.equals("upload")) {
                 new UploadClient(argList, host, port, proxyPort, new File(getConfig("-file", argList)), getConfig("-toFile", argList)).connect();
             } else if (client.equals("md5")) {

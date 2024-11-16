@@ -16,13 +16,11 @@ public class FileSystemHandler {
 
     public String getData(String request) throws IOException {
         File baseDir = getPathFromRequest(request, pathVariableName);
-        try (InputStream resourceAsStream = CommandHandler.class.getClassLoader().getResourceAsStream("index.html")) {
-            String content = new String(resourceAsStream.readAllBytes());
-            content = content.replace("$dateTime", new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new Date()) + " Hello World!!!");
-            content = content.replace("$pathValue", baseDir.getAbsolutePath());
-            content = content.replace("$fileSystemTable", getFileSystemTable(baseDir));
-            return content;
-        }
+        String content = new String(FileUtils.readAllBytesFromResource(CommandHandler.class, "index.html"));
+        content = content.replace("$dateTime", new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new Date()) + " Hello World!!!");
+        content = content.replace("$pathValue", baseDir.getAbsolutePath());
+        content = content.replace("$fileSystemTable", getFileSystemTable(baseDir));
+        return content;
     }
 
     private boolean isParentDir(String request) {

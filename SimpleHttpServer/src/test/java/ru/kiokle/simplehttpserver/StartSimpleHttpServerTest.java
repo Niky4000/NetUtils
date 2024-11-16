@@ -13,6 +13,7 @@ import static ru.kiokle.simplehttpserver.StartSimpleHttpServer.BUFFER_SIZE;
 import static ru.kiokle.simplehttpserver.clients.ExecCommandClient.createCommand;
 import static ru.kiokle.simplehttpserver.clients.UploadClient.createHead;
 import ru.kiokle.simplehttpserver.log.Logger;
+import static ru.kiokle.simplehttpserver.utils.FileUtils.LOCAL_BUFFER_SIZE;
 
 public class StartSimpleHttpServerTest {
 
@@ -24,7 +25,7 @@ public class StartSimpleHttpServerTest {
         String baseDir = FileUtils.getPathToJar().getParentFile().getAbsolutePath();
         String testFile = "test_file.txt";
         String fullTestPath = baseDir + File.separator + testFile;
-        long testFileLength = readAllBytesFromFile().length;
+        long testFileLength = ru.kiokle.simplehttpserver.utils.FileUtils.readAllBytesFromResource(StartSimpleHttpServerTest.class, "test/upload/file/test_file.txt").length;
         long targetFileLength = (BUFFER_SIZE / 8) * testFileLength;
         try {
             final StartSimpleHttpServer simpleHttpServer = new StartSimpleHttpServer();
@@ -34,7 +35,7 @@ public class StartSimpleHttpServerTest {
                     BufferedInputStream inputStream = new BufferedInputStream(socket.getInputStream(), LOCAL_BUFFER_SIZE);) {
                 outputStream.write(createHead(fullTestPath, targetFileLength).getBytes());
                 for (int i = 0; i < BUFFER_SIZE / 8; i++) {
-                    outputStream.write(readAllBytesFromFile());
+                    outputStream.write(ru.kiokle.simplehttpserver.utils.FileUtils.readAllBytesFromResource(StartSimpleHttpServerTest.class, "test/upload/file/test_file.txt"));
                 }
                 outputStream.flush();
                 byte[] readInputStream = readInputStream(inputStream);
@@ -86,16 +87,6 @@ public class StartSimpleHttpServerTest {
         listerner.start();
         listerner.join(TIME_TO_WAIT_FOR_SERVER_TO_START);
         return listerner;
-    }
-
-    private static final int LOCAL_BUFFER_SIZE = 1024 * 1024;
-
-    private byte[] readAllBytesFromFile() throws IOException {
-        try (BufferedInputStream resourceAsStream = new BufferedInputStream(StartSimpleHttpServerTest.class.getClassLoader().getResourceAsStream("test/upload/file/test_file.txt"), LOCAL_BUFFER_SIZE)) {
-            byte[] buffer = new byte[resourceAsStream.available()];
-            resourceAsStream.read(buffer);
-            return buffer;
-        }
     }
 
     private byte[] readInputStream(InputStream inputStream) throws IOException {
