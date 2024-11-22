@@ -14,9 +14,11 @@ public class TCPForwardClientR {
 //    }
     public void init(String sourceHost, int sourcePort, String destinationHost, int destinationPort) {
         while (!isEverythingInterrupted()) {
+            Socket clientSocket = null;
+            Socket mServerSocket = null;
             try {
-                Socket clientSocket = new Socket(sourceHost, sourcePort);
-                Socket mServerSocket = new Socket(destinationHost, destinationPort);
+                clientSocket = new Socket(sourceHost, sourcePort);
+                mServerSocket = new Socket(destinationHost, destinationPort);
                 // Turn on keep-alive for both the sockets 
                 mServerSocket.setKeepAlive(true);
                 clientSocket.setKeepAlive(true);
@@ -27,6 +29,19 @@ public class TCPForwardClientR {
                 if (handleError(e, "RC")) {
                     break;
                 }
+            } finally {
+                closeSocket(clientSocket);
+                closeSocket(mServerSocket);
+            }
+        }
+    }
+
+    private void closeSocket(Socket socket) {
+        if (socket != null) {
+            try {
+                socket.close();
+            } catch (Exception e) {
+                com.some.tcp.Logger.log(e.getMessage());
             }
         }
     }
