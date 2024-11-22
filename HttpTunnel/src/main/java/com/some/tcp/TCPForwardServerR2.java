@@ -33,12 +33,11 @@ public class TCPForwardServerR2 {
         clientListernerThread.start();
         serverListernerThread.start();
         while (!isEverythingInterrupted()) {
-            socketBean.waitForSocketsToBeReady();
-            Socket clientSocket2 = socketBean.getClientSocket2();
-            Socket serverSocket2 = socketBean.getServerSocket2();
-            ClientThread clientThread = new ClientThread(clientSocket2, serverSocket2);
-            clientThread.setName("clientThread");
-            clientThread.start();
+            socketBean.waitForSocketsToBeReady((clientSocket2, serverSocket2) -> {
+                ClientThread clientThread = new ClientThread(clientSocket2, serverSocket2);
+                clientThread.setName("clientThread");
+                clientThread.start();
+            });
         }
     }
 

@@ -6,6 +6,7 @@
 package com.some.tcp.bean;
 
 import java.net.Socket;
+import java.util.function.BiConsumer;
 
 /**
  *
@@ -40,12 +41,15 @@ public class SocketBean {
         notifyAll();
     }
 
-    public synchronized void waitForSocketsToBeReady() {
+    public synchronized void waitForSocketsToBeReady(BiConsumer<Socket, Socket> createThread) {
         while (!(clientSocket2 != null && !clientSocket2.isClosed() && serverSocket2 != null && !serverSocket2.isClosed())) {
             try {
                 wait();
             } catch (InterruptedException ex) { // Eat that!
             }
         }
+        Socket clientSocket2 = getClientSocket2();
+        Socket serverSocket2 = getServerSocket2();
+        createThread.accept(clientSocket2, serverSocket2);
     }
 }
