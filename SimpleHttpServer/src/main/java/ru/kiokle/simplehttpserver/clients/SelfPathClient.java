@@ -8,16 +8,17 @@ import static ru.kiokle.simplehttpserver.StartSimpleHttpServer.delimiter;
 import static ru.kiokle.simplehttpserver.StartSimpleHttpServer.endOfStream;
 import static ru.kiokle.simplehttpserver.StartSimpleHttpServer.endStr;
 import static ru.kiokle.simplehttpserver.StartSimpleHttpServer.headEndStr;
+import ru.kiokle.simplehttpserver.clients.enums.ConnectionType;
 import static ru.kiokle.simplehttpserver.handlers.CommandEnum.LENGTH;
 import static ru.kiokle.simplehttpserver.handlers.CommandEnum.SELF_PATH;
 import ru.kiokle.simplehttpserver.log.Logger;
 
-public class SelfPathClient extends I2pClient {
+public class SelfPathClient extends Client {
 
     private final AtomicReference<String> selfPathReference;
 
-    public SelfPathClient(List<String> argList, String destinationHost, int destinationPort, int proxyPort, AtomicReference<String> md5Reference) {
-        super(argList, destinationHost, destinationPort, proxyPort);
+    public SelfPathClient(List<String> argList, String destinationHost, int destinationPort, int proxyPort, ConnectionType connectionType, AtomicReference<String> md5Reference) {
+        super(argList, destinationHost, destinationPort, proxyPort, connectionType);
         this.selfPathReference = md5Reference;
     }
 

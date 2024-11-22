@@ -7,6 +7,8 @@ import static ru.kiokle.simplehttpserver.StartSimpleHttpServer.delimiter;
 import static ru.kiokle.simplehttpserver.StartSimpleHttpServer.endOfStream;
 import static ru.kiokle.simplehttpserver.StartSimpleHttpServer.endStr;
 import static ru.kiokle.simplehttpserver.StartSimpleHttpServer.headEndStr;
+import ru.kiokle.simplehttpserver.clients.enums.ConnectionType;
+import static ru.kiokle.simplehttpserver.clients.enums.ConnectionType.LOCAL;
 import static ru.kiokle.simplehttpserver.handlers.CommandEnum.LENGTH;
 import static ru.kiokle.simplehttpserver.handlers.CommandEnum.STOP;
 import ru.kiokle.simplehttpserver.log.Logger;
@@ -14,7 +16,7 @@ import ru.kiokle.simplehttpserver.log.Logger;
 public class StopServerClient extends Client {
 
     public StopServerClient(List<String> argList, String destinationHost, int destinationPort) {
-        super(argList, destinationHost, destinationPort);
+        super(argList, destinationHost, destinationPort, 0, LOCAL);
     }
 
     public static String createCommand() {

@@ -9,17 +9,29 @@ import static ru.kiokle.simplehttpserver.StartSimpleHttpServer.endStr;
 
 public class ExecCommandHandler implements CommandHandler {
 
+    private static String async = " &";
+
     @Override
     public void handle(ByteArrayOutputStream byteArrayOutputStream, BufferedInputStream inputStream, int length, BufferedOutputStream outputStream, int headIndex, String command) throws Exception {
-        Process process = Runtime.getRuntime().exec(command);
-        try (BufferedReader input = new BufferedReader(new InputStreamReader(process.getInputStream()))) {
-            StringBuilder headers = getHeaders();
-            outputStream.write(headers.toString().getBytes());
-            String line;
-            while ((line = input.readLine()) != null) {
-                outputStream.write((line + endStr).getBytes());
+        String commandCmd;
+        boolean isAsync = false;
+        if (command.endsWith(async)) {
+            commandCmd = command.substring(0, command.lastIndexOf(async));
+            isAsync = true;
+        } else {
+            commandCmd = command;
+        }
+        Process process = Runtime.getRuntime().exec(commandCmd);
+        if (!isAsync) {
+            try (BufferedReader input = new BufferedReader(new InputStreamReader(process.getInputStream()))) {
+                StringBuilder headers = getHeaders();
+                outputStream.write(headers.toString().getBytes());
+                String line;
+                while ((line = input.readLine()) != null) {
+                    outputStream.write((line + endStr).getBytes());
+                }
+                outputStream.flush();
             }
-            outputStream.flush();
         }
     }
 }

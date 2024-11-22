@@ -9,16 +9,17 @@ import static ru.kiokle.simplehttpserver.StartSimpleHttpServer.endOfStream;
 import static ru.kiokle.simplehttpserver.StartSimpleHttpServer.endStr;
 import static ru.kiokle.simplehttpserver.StartSimpleHttpServer.getConfig;
 import static ru.kiokle.simplehttpserver.StartSimpleHttpServer.headEndStr;
+import ru.kiokle.simplehttpserver.clients.enums.ConnectionType;
 import static ru.kiokle.simplehttpserver.handlers.CommandEnum.LENGTH;
 import static ru.kiokle.simplehttpserver.handlers.CommandEnum.MD5;
 import ru.kiokle.simplehttpserver.log.Logger;
 
-public class Md5Client extends I2pClient {
+public class Md5Client extends Client {
 
     private final AtomicReference<String> md5Reference;
 
-    public Md5Client(List<String> argList, String destinationHost, int destinationPort, int proxyPort, AtomicReference<String> md5Reference) {
-        super(argList, destinationHost, destinationPort, proxyPort);
+    public Md5Client(List<String> argList, String destinationHost, int destinationPort, int proxyPort, ConnectionType connectionType, AtomicReference<String> md5Reference) {
+        super(argList, destinationHost, destinationPort, proxyPort, connectionType);
         this.md5Reference = md5Reference;
     }
 

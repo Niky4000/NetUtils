@@ -3,12 +3,13 @@ package ru.kiokle.simplehttpserver.clients;
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
 import java.util.List;
+import ru.kiokle.simplehttpserver.clients.enums.ConnectionType;
 import ru.kiokle.simplehttpserver.log.Logger;
 
-public class PingClient extends I2pClient {
+public class PingClient extends Client {
 
-    public PingClient(List<String> argList, String destinationHost, int destinationPort, int proxyPort) {
-        super(argList, destinationHost, destinationPort, proxyPort);
+    public PingClient(List<String> argList, String destinationHost, int destinationPort, int proxyPort, ConnectionType connectionType) {
+        super(argList, destinationHost, destinationPort, proxyPort, connectionType);
     }
 
     @Override

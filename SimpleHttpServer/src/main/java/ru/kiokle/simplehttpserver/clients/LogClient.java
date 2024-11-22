@@ -8,17 +8,18 @@ import static ru.kiokle.simplehttpserver.StartSimpleHttpServer.delimiter;
 import static ru.kiokle.simplehttpserver.StartSimpleHttpServer.endOfStream;
 import static ru.kiokle.simplehttpserver.StartSimpleHttpServer.endStr;
 import static ru.kiokle.simplehttpserver.StartSimpleHttpServer.headEndStr;
+import ru.kiokle.simplehttpserver.clients.enums.ConnectionType;
 import static ru.kiokle.simplehttpserver.handlers.CommandEnum.LENGTH;
 import static ru.kiokle.simplehttpserver.handlers.CommandEnum.LOG;
 import ru.kiokle.simplehttpserver.log.Logger;
 
-public class LogClient extends I2pClient {
+public class LogClient extends Client {
 
     private final AtomicReference<String> logsReference;
     private final int count;
 
-    public LogClient(List<String> argList, String destinationHost, int destinationPort, int proxyPort, int count, AtomicReference<String> md5Reference) {
-        super(argList, destinationHost, destinationPort, proxyPort);
+    public LogClient(List<String> argList, String destinationHost, int destinationPort, int proxyPort, ConnectionType connectionType, int count, AtomicReference<String> md5Reference) {
+        super(argList, destinationHost, destinationPort, proxyPort, connectionType);
         this.logsReference = md5Reference;
         this.count = count;
     }

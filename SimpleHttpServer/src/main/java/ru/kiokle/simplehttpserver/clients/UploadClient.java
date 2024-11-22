@@ -10,17 +10,18 @@ import static ru.kiokle.simplehttpserver.StartSimpleHttpServer.delimiter;
 import static ru.kiokle.simplehttpserver.StartSimpleHttpServer.endOfStream;
 import static ru.kiokle.simplehttpserver.StartSimpleHttpServer.endStr;
 import static ru.kiokle.simplehttpserver.StartSimpleHttpServer.headEndStr;
+import ru.kiokle.simplehttpserver.clients.enums.ConnectionType;
 import static ru.kiokle.simplehttpserver.handlers.CommandEnum.LENGTH;
 import static ru.kiokle.simplehttpserver.handlers.CommandEnum.UPLOAD;
 import ru.kiokle.simplehttpserver.log.Logger;
 
-public class UploadClient extends I2pClient {
+public class UploadClient extends Client {
 
     private final File file;
     private final String toFile;
 
-    public UploadClient(List<String> argList, String destinationHost, int destinationPort, int proxyPort, File file, String toFile) {
-        super(argList, destinationHost, destinationPort, proxyPort);
+    public UploadClient(List<String> argList, String destinationHost, int destinationPort, int proxyPort, ConnectionType connectionType, File file, String toFile) {
+        super(argList, destinationHost, destinationPort, proxyPort, connectionType);
         this.file = file;
         this.toFile = toFile;
     }

@@ -1,16 +1,5 @@
 package ru.kiokle.simplehttpserver;
 
-import java.io.BufferedInputStream;
-import java.io.BufferedOutputStream;
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.net.InetSocketAddress;
-import java.net.Proxy;
-import java.net.Socket;
-import java.net.SocketAddress;
-import static ru.kiokle.simplehttpserver.StartSimpleHttpServer.BUFFER_SIZE;
-import ru.kiokle.simplehttpserver.clients.I2pClient;
-
 public class I2PClient {
 
     // curl -v --proxy localhost:4444 http://mgfomi116.i2p/

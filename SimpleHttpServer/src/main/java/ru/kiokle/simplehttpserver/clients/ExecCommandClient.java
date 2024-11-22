@@ -7,16 +7,17 @@ import static ru.kiokle.simplehttpserver.StartSimpleHttpServer.delimiter;
 import static ru.kiokle.simplehttpserver.StartSimpleHttpServer.endOfStream;
 import static ru.kiokle.simplehttpserver.StartSimpleHttpServer.endStr;
 import static ru.kiokle.simplehttpserver.StartSimpleHttpServer.headEndStr;
+import ru.kiokle.simplehttpserver.clients.enums.ConnectionType;
 import static ru.kiokle.simplehttpserver.handlers.CommandEnum.EXEC;
 import static ru.kiokle.simplehttpserver.handlers.CommandEnum.LENGTH;
 import ru.kiokle.simplehttpserver.log.Logger;
 
-public class ExecCommandClient extends I2pClient {
+public class ExecCommandClient extends Client {
 
     private final String command;
 
-    public ExecCommandClient(List<String> argList, String destinationHost, int destinationPort, int proxyPort, String command) {
-        super(argList, destinationHost, destinationPort, proxyPort);
+    public ExecCommandClient(List<String> argList, String destinationHost, int destinationPort, int proxyPort, ConnectionType connectionType, String command) {
+        super(argList, destinationHost, destinationPort, proxyPort, connectionType);
         this.command = command;
     }
 
