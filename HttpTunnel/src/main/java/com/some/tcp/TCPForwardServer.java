@@ -33,32 +33,32 @@ public class TCPForwardServer {
 //    public static void main(String[] args) throws IOException {
 //        new TCPForwardServer().init(22888, "192.168.192.215", 22);
 //    }
-	public void init(int sourcePort, String destinationHost, int destinationPort, Map<Integer, Set<String>> filterMap) {
-		try {
-			ServerSocket serverSocket = new ServerSocket(sourcePort);
-			addOpenedPort(sourcePort, serverSocket);
-			while (!isEverythingInterrupted()) {
-				try {
-					Socket clientSocket = serverSocket.accept();
-					if (fireWall(sourcePort, clientSocket, filterMap)) {
-						clientSocket.close();
-						continue;
-					}
-					// Connect to the destination server 
-					Socket mServerSocket = new Socket(destinationHost, destinationPort);
-					// Turn on keep-alive for both the sockets 
-					mServerSocket.setKeepAlive(true);
-					clientSocket.setKeepAlive(true);
-					ClientThread clientThread = new ClientThread(clientSocket, mServerSocket);
-					clientThread.start();
-				} catch (IOException ex) {
-					if (handleError(ex, "L")) {
-						break;
-					}
-				}
-			}
-		} catch (IOException ex) {
-			throw new RuntimeException(ex);
-		}
-	}
+    public void init(int sourcePort, String destinationHost, int destinationPort, Map<Integer, Set<String>> filterMap) {
+        try {
+            ServerSocket serverSocket = new ServerSocket(sourcePort);
+            addOpenedPort(sourcePort, serverSocket);
+            while (!isEverythingInterrupted()) {
+                try {
+                    Socket clientSocket = serverSocket.accept();
+                    if (fireWall(sourcePort, clientSocket, filterMap)) {
+                        clientSocket.close();
+                        continue;
+                    }
+                    // Connect to the destination server 
+                    Socket mServerSocket = new Socket(destinationHost, destinationPort);
+                    // Turn on keep-alive for both the sockets 
+                    mServerSocket.setKeepAlive(true);
+                    clientSocket.setKeepAlive(true);
+                    ClientThread clientThread = new ClientThread(clientSocket, mServerSocket);
+                    clientThread.start();
+                } catch (IOException ex) {
+                    if (handleError(ex, "L")) {
+                        break;
+                    }
+                }
+            }
+        } catch (IOException ex) {
+            throw new RuntimeException(ex);
+        }
+    }
 }

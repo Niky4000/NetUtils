@@ -11,24 +11,24 @@ package com.some.tcp;
  */
 public class Logger {
 
-	private static boolean isWindows = System.getProperty("os.name").toLowerCase().contains("win");
+    private static boolean isWindows = System.getProperty("os.name").toLowerCase().contains("win");
 
-	public static void log(String message) {
-		log(message, null);
-	}
+    public static void log(String message) {
+        log(message, null);
+    }
 
-	public static void log(Exception e) {
-		log(null, e);
-	}
+    public static void log(Exception e) {
+        log(null, e);
+    }
 
-	public static void log(String message, Exception e) {
-		if (isWindows) {
-			if (message != null) {
-				System.out.println(message);
-			}
-			if (e != null) {
-				e.printStackTrace();
-			}
-		}
-	}
+    public static void log(String message, Exception e) {
+        if (isWindows) {
+            if (message != null) {
+                System.out.println(message);
+            }
+            if (e != null) {
+                e.printStackTrace();
+            }
+        }
+    }
 }

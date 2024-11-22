@@ -3,7 +3,7 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>ru.http</groupId>
     <artifactId>jutil</artifactId>
-	<name>jUtil</name>
+    <name>jUtil</name>
     <version>2</version>
     <packaging>jar</packaging>
     <properties>

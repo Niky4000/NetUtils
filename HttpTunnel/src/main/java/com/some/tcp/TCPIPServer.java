@@ -18,24 +18,24 @@ import java.net.Socket;
  */
 public class TCPIPServer {
 
-	public void init(int sourcePort) {
-		try {
-			ServerSocket serverSocket = new ServerSocket(sourcePort);
-			addOpenedPort(sourcePort, serverSocket);
-			while (!isEverythingInterrupted()) {
-				try (Socket clientSocket = serverSocket.accept()) {
-					InetAddress inetAddress = clientSocket.getInetAddress();
-					String hostIp = inetAddress.getHostAddress();
-					System.out.println(hostIp);
-					try (OutputStream outputStream = clientSocket.getOutputStream()) {
-						outputStream.write(hostIp.getBytes());
-					}
-				} catch (Exception e) {
-					continue;
-				}
-			}
-		} catch (Exception e) {
-			e.printStackTrace();
-		}
-	}
+    public void init(int sourcePort) {
+        try {
+            ServerSocket serverSocket = new ServerSocket(sourcePort);
+            addOpenedPort(sourcePort, serverSocket);
+            while (!isEverythingInterrupted()) {
+                try (Socket clientSocket = serverSocket.accept()) {
+                    InetAddress inetAddress = clientSocket.getInetAddress();
+                    String hostIp = inetAddress.getHostAddress();
+                    System.out.println(hostIp);
+                    try (OutputStream outputStream = clientSocket.getOutputStream()) {
+                        outputStream.write(hostIp.getBytes());
+                    }
+                } catch (Exception e) {
+                    continue;
+                }
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
 }
