@@ -18,7 +18,9 @@ public class TCPForwardClientR {
             Socket mServerSocket = null;
             try {
                 clientSocket = new Socket(sourceHost, sourcePort);
+                Logger.log("clientSocket " + clientSocket.toString() + " connected!");
                 mServerSocket = new Socket(destinationHost, destinationPort);
+                Logger.log("mServerSocket " + mServerSocket.toString() + " connected!");
                 // Turn on keep-alive for both the sockets 
                 mServerSocket.setKeepAlive(true);
                 clientSocket.setKeepAlive(true);

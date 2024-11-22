@@ -37,7 +37,7 @@ public class SocketBean {
     }
 
     public synchronized void notifyIt() {
-        notify();
+        notifyAll();
     }
 
     public synchronized void waitForSocketsToBeReady() {

@@ -12,6 +12,7 @@ package com.some.tcp;
 public class Logger {
 
     private static boolean isWindows = System.getProperty("os.name").toLowerCase().contains("win");
+    private static volatile boolean enabled = false;
 
     public static void log(String message) {
         log(message, null);
@@ -22,7 +23,7 @@ public class Logger {
     }
 
     public static void log(String message, Exception e) {
-        if (isWindows) {
+        if (isWindows || enabled) {
             if (message != null) {
                 System.out.println(message);
             }
@@ -30,5 +31,9 @@ public class Logger {
                 e.printStackTrace();
             }
         }
+    }
+
+    public static void enable() {
+        enabled = true;
     }
 }

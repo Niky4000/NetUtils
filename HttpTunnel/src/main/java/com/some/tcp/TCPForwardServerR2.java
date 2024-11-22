@@ -17,10 +17,16 @@ public class TCPForwardServerR2 {
     public void init(int sourcePort, int destinationPort, Map<Integer, Set<String>> filterMap) {
         SocketBean socketBean = new SocketBean();
         Thread clientListernerThread = new Thread(() -> {
-            serverImpl(destinationPort, socketBean, socket -> socketBean.setClientSocket2(socket), filterMap);
+            serverImpl(destinationPort, socketBean, socket -> {
+                socketBean.setClientSocket2(socket);
+                Logger.log(socket.toString() + " connected to destinationPort " + destinationPort + "!");
+            }, filterMap);
         });
         Thread serverListernerThread = new Thread(() -> {
-            serverImpl(sourcePort, socketBean, socket -> socketBean.setServerSocket2(socket), filterMap);
+            serverImpl(sourcePort, socketBean, socket -> {
+                socketBean.setServerSocket2(socket);
+                Logger.log(socket.toString() + " connected to sourcePort " + sourcePort + "!");
+            }, filterMap);
         });
         clientListernerThread.setName("clientListernerThread");
         serverListernerThread.setName("serverListernerThread");
