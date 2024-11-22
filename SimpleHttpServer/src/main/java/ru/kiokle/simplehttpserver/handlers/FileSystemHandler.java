@@ -2,7 +2,6 @@ package ru.kiokle.simplehttpserver.handlers;
 
 import java.io.File;
 import java.io.IOException;
-import java.io.InputStream;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import static ru.kiokle.simplehttpserver.StartSimpleHttpServer.endStr;

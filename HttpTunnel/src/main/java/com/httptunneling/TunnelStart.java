@@ -7,6 +7,7 @@ import static com.httptunneling.utils.NetUtils.parceFilters;
 import static com.httptunneling.utils.NetUtils.readInputStream;
 import static com.httptunneling.utils.NetUtils.writeOutputStream;
 import com.lib.ConfigHandler;
+import com.some.tcp.LogServer;
 import com.some.tcp.Logger;
 import com.some.tcp.TCPForwardClientR;
 import com.some.tcp.TCPForwardServer;
@@ -58,6 +59,8 @@ public class TunnelStart {
                 filterMap.putAll(parceFilters(argList));
                 if (argList.get(0).equals("LOG")) {
                     Logger.enable();
+                } else if (argList.get(0).equals("LOG_SERVER")) {
+                    l(new Thread(() -> new LogServer().init(Integer.valueOf(argList.get(1)), filterMap)));
                 } else if (argList.get(0).equals("M")) { // Management thread
                     m(new Thread(() -> new ManagementServer().init(Integer.valueOf(argList.get(1)))));
                 } else if (argList.get(0).equals("L")) {
@@ -130,6 +133,12 @@ public class TunnelStart {
 
     private static void m(Thread thread) {
         thread.setName("ManagementThread");
+        threadList.add(thread);
+        thread.start();
+    }
+
+    private static void l(Thread thread) {
+        thread.setName("LoggingThread");
         threadList.add(thread);
         thread.start();
     }

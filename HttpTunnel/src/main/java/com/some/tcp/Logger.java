@@ -5,6 +5,9 @@
  */
 package com.some.tcp;
 
+import java.util.ArrayList;
+import java.util.List;
+
 /**
  *
  * @author me
@@ -13,27 +16,47 @@ public class Logger {
 
     private static boolean isWindows = System.getProperty("os.name").toLowerCase().contains("win");
     private static volatile boolean enabled = false;
+    private static List<String> messages = new ArrayList<>();
+    private static int MAX_SIZE = 64;
 
-    public static void log(String message) {
+    public static synchronized void log(String message) {
         log(message, null);
     }
 
-    public static void log(Exception e) {
+    public static synchronized void log(Exception e) {
         log(null, e);
     }
 
-    public static void log(String message, Exception e) {
+    public static synchronized void log(String message, Exception e) {
         if (isWindows || enabled) {
             if (message != null) {
                 System.out.println(message);
+                addMessage(message);
             }
             if (e != null) {
                 e.printStackTrace();
+                StackTraceElement[] stackTraceArray = e.getStackTrace();
+                for (StackTraceElement element : stackTraceArray) {
+                    addMessage(element.toString());
+                }
             }
         }
     }
 
-    public static void enable() {
+    private static synchronized void addMessage(String message) {
+        messages.add(message);
+        if (messages.size() > MAX_SIZE) {
+            messages.remove(messages.size() - 1);
+        }
+    }
+
+    public static synchronized List<String> getMessages() {
+        List<String> list = new ArrayList<>(messages);
+        messages.clear();
+        return list;
+    }
+
+    public static synchronized void enable() {
         enabled = true;
     }
 }
