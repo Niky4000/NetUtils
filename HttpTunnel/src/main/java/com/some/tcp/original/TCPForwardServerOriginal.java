@@ -30,15 +30,15 @@ public class TCPForwardServerOriginal {
 //    public static void main(String[] args) throws IOException {
 //        new TCPForwardServerOriginal().init(22888, "192.168.192.215", 22);
 //    }
-	public void init(int sourcePort, String destinationHost, int destinationPort) throws IOException {
-		ServerSocket serverSocket = new ServerSocket(sourcePort);
-		addOpenedPort(sourcePort, serverSocket);
-		while (!isEverythingInterrupted()) {
-			Socket clientSocket = serverSocket.accept();
-			ClientThread clientThread = new ClientThread(clientSocket, destinationHost, destinationPort);
-			clientThread.start();
-		}
-	}
+    public void init(int sourcePort, String destinationHost, int destinationPort) throws IOException {
+        ServerSocket serverSocket = new ServerSocket(sourcePort);
+        addOpenedPort(sourcePort, serverSocket);
+        while (!isEverythingInterrupted()) {
+            Socket clientSocket = serverSocket.accept();
+            ClientThread clientThread = new ClientThread(clientSocket, destinationHost, destinationPort);
+            clientThread.start();
+        }
+    }
 }
 
 /**
@@ -49,89 +49,89 @@ public class TCPForwardServerOriginal {
  */
 class ClientThread extends Thread {
 
-	private Socket mClientSocket;
-	private Socket mServerSocket;
-	private boolean mForwardingActive = false;
-	private final String destinationHost;
-	private final int destinationPort;
+    private Socket mClientSocket;
+    private Socket mServerSocket;
+    private boolean mForwardingActive = false;
+    private final String destinationHost;
+    private final int destinationPort;
 
-	public ClientThread(Socket aClientSocket, String destinationHost, int destinationPort) {
-		mClientSocket = aClientSocket;
-		this.destinationHost = destinationHost;
-		this.destinationPort = destinationPort;
-	}
+    public ClientThread(Socket aClientSocket, String destinationHost, int destinationPort) {
+        mClientSocket = aClientSocket;
+        this.destinationHost = destinationHost;
+        this.destinationPort = destinationPort;
+    }
 
-	/**
-	 * Establishes connection to the destination server and starts bidirectional
-	 * forwarding ot data between the client and the server.
-	 */
-	@Override
-	public void run() {
-		InputStream clientIn;
-		OutputStream clientOut;
-		InputStream serverIn;
-		OutputStream serverOut;
-		try {
-			// Connect to the destination server 
-			mServerSocket = new Socket(destinationHost, destinationPort);
+    /**
+     * Establishes connection to the destination server and starts bidirectional
+     * forwarding ot data between the client and the server.
+     */
+    @Override
+    public void run() {
+        InputStream clientIn;
+        OutputStream clientOut;
+        InputStream serverIn;
+        OutputStream serverOut;
+        try {
+            // Connect to the destination server 
+            mServerSocket = new Socket(destinationHost, destinationPort);
 
-			// Turn on keep-alive for both the sockets 
-			mServerSocket.setKeepAlive(true);
-			mClientSocket.setKeepAlive(true);
+            // Turn on keep-alive for both the sockets 
+            mServerSocket.setKeepAlive(true);
+            mClientSocket.setKeepAlive(true);
 
-			// Obtain client & server input & output streams 
-			clientIn = mClientSocket.getInputStream();
-			clientOut = mClientSocket.getOutputStream();
-			serverIn = mServerSocket.getInputStream();
-			serverOut = mServerSocket.getOutputStream();
-		} catch (IOException ioe) {
-			Logger.log("Can not connect to " + destinationHost + ":" + destinationPort);
-			connectionBroken();
-			return;
-		}
+            // Obtain client & server input & output streams 
+            clientIn = mClientSocket.getInputStream();
+            clientOut = mClientSocket.getOutputStream();
+            serverIn = mServerSocket.getInputStream();
+            serverOut = mServerSocket.getOutputStream();
+        } catch (IOException ioe) {
+            Logger.log("Can not connect to " + destinationHost + ":" + destinationPort);
+            connectionBroken();
+            return;
+        }
 
-		// Start forwarding data between server and client 
-		mForwardingActive = true;
-		ForwardThread clientForward = new ForwardThread(this, clientIn, serverOut);
-		clientForward.start();
-		ForwardThread serverForward = new ForwardThread(this, serverIn, clientOut);
-		serverForward.start();
+        // Start forwarding data between server and client 
+        mForwardingActive = true;
+        ForwardThread clientForward = new ForwardThread(this, clientIn, serverOut);
+        clientForward.start();
+        ForwardThread serverForward = new ForwardThread(this, serverIn, clientOut);
+        serverForward.start();
 
-		Logger.log(getDateStr());
-		Logger.log("TCP Forwarding "
-				+ mClientSocket.getInetAddress().getHostAddress()
-				+ ":" + mClientSocket.getPort() + " <--> "
-				+ mServerSocket.getInetAddress().getHostAddress()
-				+ ":" + mServerSocket.getPort() + " started.");
-	}
+        Logger.log(getDateStr());
+        Logger.log("TCP Forwarding "
+                + mClientSocket.getInetAddress().getHostAddress()
+                + ":" + mClientSocket.getPort() + " <--> "
+                + mServerSocket.getInetAddress().getHostAddress()
+                + ":" + mServerSocket.getPort() + " started.");
+    }
 
-	/**
-	 * Called by some of the forwarding threads to indicate that its socket
-	 * connection is brokean and both client and server sockets should be
-	 * closed. Closing the client and server sockets causes all threads blocked
-	 * on reading or writing to these sockets to get an exception and to finish
-	 * their execution.
-	 */
-	public synchronized void connectionBroken() {
-		try {
-			mServerSocket.close();
-		} catch (Exception e) {
-		}
-		try {
-			mClientSocket.close();
-		} catch (Exception e) {
-		}
+    /**
+     * Called by some of the forwarding threads to indicate that its socket
+     * connection is brokean and both client and server sockets should be
+     * closed. Closing the client and server sockets causes all threads blocked
+     * on reading or writing to these sockets to get an exception and to finish
+     * their execution.
+     */
+    public synchronized void connectionBroken() {
+        try {
+            mServerSocket.close();
+        } catch (Exception e) {
+        }
+        try {
+            mClientSocket.close();
+        } catch (Exception e) {
+        }
 
-		if (mForwardingActive) {
-			Logger.log(getDateStr());
-			Logger.log("TCP Forwarding "
-					+ mClientSocket.getInetAddress().getHostAddress()
-					+ ":" + mClientSocket.getPort() + " <--> "
-					+ mServerSocket.getInetAddress().getHostAddress()
-					+ ":" + mServerSocket.getPort() + " stopped.");
-			mForwardingActive = false;
-		}
-	}
+        if (mForwardingActive) {
+            Logger.log(getDateStr());
+            Logger.log("TCP Forwarding "
+                    + mClientSocket.getInetAddress().getHostAddress()
+                    + ":" + mClientSocket.getPort() + " <--> "
+                    + mServerSocket.getInetAddress().getHostAddress()
+                    + ":" + mServerSocket.getPort() + " stopped.");
+            mForwardingActive = false;
+        }
+    }
 }
 
 /**
@@ -142,44 +142,44 @@ class ClientThread extends Thread {
  */
 class ForwardThread extends Thread {
 
-	private static final int BUFFER_SIZE = 8192;
+    private static final int BUFFER_SIZE = 8192;
 
-	InputStream mInputStream;
-	OutputStream mOutputStream;
-	ClientThread mParent;
+    InputStream mInputStream;
+    OutputStream mOutputStream;
+    ClientThread mParent;
 
-	/**
-	 * Creates a new traffic redirection thread specifying its parent, input
-	 * stream and output stream.
-	 */
-	public ForwardThread(ClientThread aParent, InputStream aInputStream, OutputStream aOutputStream) {
-		mParent = aParent;
-		mInputStream = aInputStream;
-		mOutputStream = aOutputStream;
-	}
+    /**
+     * Creates a new traffic redirection thread specifying its parent, input
+     * stream and output stream.
+     */
+    public ForwardThread(ClientThread aParent, InputStream aInputStream, OutputStream aOutputStream) {
+        mParent = aParent;
+        mInputStream = aInputStream;
+        mOutputStream = aOutputStream;
+    }
 
-	/**
-	 * Runs the thread. Continuously reads the input stream and writes the read
-	 * data to the output stream. If reading or writing fail, exits the thread
-	 * and notifies the parent about the failure.
-	 */
-	@Override
-	public void run() {
-		byte[] buffer = new byte[BUFFER_SIZE];
-		try {
-			while (true) {
-				int bytesRead = mInputStream.read(buffer);
-				if (bytesRead == -1) {
-					break; // End of stream is reached --> exit 
-				}
-				mOutputStream.write(buffer, 0, bytesRead);
-				mOutputStream.flush();
-			}
-		} catch (IOException e) {
-			// Read/write failed --> connection is broken 
-		}
+    /**
+     * Runs the thread. Continuously reads the input stream and writes the read
+     * data to the output stream. If reading or writing fail, exits the thread
+     * and notifies the parent about the failure.
+     */
+    @Override
+    public void run() {
+        byte[] buffer = new byte[BUFFER_SIZE];
+        try {
+            while (true) {
+                int bytesRead = mInputStream.read(buffer);
+                if (bytesRead == -1) {
+                    break; // End of stream is reached --> exit 
+                }
+                mOutputStream.write(buffer, 0, bytesRead);
+                mOutputStream.flush();
+            }
+        } catch (IOException e) {
+            // Read/write failed --> connection is broken 
+        }
 
-		// Notify parent thread that the connection is broken 
-		mParent.connectionBroken();
-	}
+        // Notify parent thread that the connection is broken 
+        mParent.connectionBroken();
+    }
 }

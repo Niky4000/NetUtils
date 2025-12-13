@@ -2,3 +2,7 @@
 /ServerManager/target/
 /SimpleHttpServer/target/
 /jFtp/target/
+/RestartI2PService/target/
+/jDownloadSsh/target/
+/HttpTunnel/nbactions.xml
+/telegrambot/target/

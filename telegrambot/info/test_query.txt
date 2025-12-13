@@ -1,0 +1,21 @@
+curl https://api.yookassa.ru/v3/payments/30cd214d-000f-5000-b000-12209463dddb -u 1226693:test_mdHXbWds8EWkSz_kY5YVWEabVYDvj3SRxae0KKpsqzI
+
+
+
+curl https://api.yookassa.ru/v3/payments \
+  -X POST \
+  -u 1226693:test_mdHXbWds8EWkSz_kY5YVWEabVYDvj3SRxae0KKpsqzI \
+  -H 'Idempotence-Key: 4444444' \
+  -H 'Content-Type: application/json' \
+  -d '{
+        "amount": {
+          "value": "100.00",
+          "currency": "RUB"
+        },
+        "capture": true,
+        "confirmation": {
+          "type": "redirect",
+          "return_url": "https://t.me/bread63bot"
+        },
+        "description": "Заказ №2"
+      }'

@@ -4,6 +4,8 @@ import com.servermanager.StartServerManager;
 import static com.utils.FileUtils.handleFile;
 import static com.utils.Logger.println;
 import java.io.File;
+import java.nio.file.Files;
+import java.nio.file.attribute.FileTime;
 import java.util.Date;
 
 public class FileUploadInputObject<T> extends TransferObject<T> {
@@ -56,6 +58,13 @@ public class FileUploadInputObject<T> extends TransferObject<T> {
 				}
 			}
 		});
+		if (file != null && file.exists()) {
+			try {
+				Files.setLastModifiedTime(file.toPath(), FileTime.fromMillis(eventDate.getTime()));
+			} catch (Exception e) {
+				throw new RuntimeException(e);
+			}
+		}
 		return new TransferObject();
 	}
 }
