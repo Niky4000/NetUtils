@@ -22,7 +22,8 @@ public class DatabaseUpdates {
                 new ConditionalSql("create table users (id long, login varchar(255), name varchar(255), phone varchar(11), chat_id long, created timestamp, primary key(id))", () -> databaseVersion.get() == 0L),
                 new ConditionalSql("create table user_orders (id long, user_id long, created timestamp, price long, finished boolean, active boolean, primary key(id))", () -> databaseVersion.get() == 0L),
                 new ConditionalSql("create table orders (id long, user_id long, order_id long, name varchar(255), price long, quantity int, created timestamp, active boolean, primary key(id))", () -> databaseVersion.get() == 0L),
-                new ConditionalSql("create table payments (id long, order_id long, payment_id varchar(36), idempotence_key varchar(32), description varchar(255), price long, created timestamp, status varchar(32), active boolean, response varchar(65536), cancel_response varchar(65536), primary key(id))", () -> databaseVersion.get() == 0L),
+                new ConditionalSql("create table payments (id long, order_id long, payment_id varchar(36), idempotence_key varchar(32), description varchar(255), price long, created timestamp, status varchar(32), active boolean, primary key(id))", () -> databaseVersion.get() == 0L),
+                new ConditionalSql("create table payment_responses (id long, order_id long, payment_id long, created timestamp, status varchar(32), response varchar(65536), primary key(id))", () -> databaseVersion.get() == 0L),
                 new ConditionalSql("create table master_user (id long, login varchar(255), active boolean, chat_id long, created timestamp, primary key(id))", () -> databaseVersion.get() == 0L),
                 new ConditionalSql("insert into database_version (version) values(1)", () -> databaseVersion.get() == 0L)
         ));

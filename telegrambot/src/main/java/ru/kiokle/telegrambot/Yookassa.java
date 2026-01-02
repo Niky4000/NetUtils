@@ -70,7 +70,7 @@ public class Yookassa {
                     + "        },\n"
                     + "        \"description\": \"Заказ № " + userOrder.getId() + "\"\n"
                     + "      }");
-            System.out.println(sendPostHttps);
+//            System.out.println(sendPostHttps);
             PaymentBean payment = new PaymentBean(sendPostHttps, idempotenceKey);
             Long paymentId = h2.addPayment(userOrder, payment);
             return payment.setId(paymentId);
@@ -79,14 +79,15 @@ public class Yookassa {
         }
     }
 
-    public void checkPayment(String paymentId) {
+    public PaymentBean checkPayment(String paymentId) {
         try {
             Map<String, String> headers = new LinkedHashMap<>();
             headers.put("Authorization", "Basic " + r(credentials));
             headers.put("Content-Type", "application/json");
             String sendPostHttps = sendPostHttps(yookassaCheckPaymentUrl.replace("{payment_id}", paymentId), RequestMethod.GET, headers, null);
-            System.out.println(sendPostHttps);
-//            h2.cancelPayment(idempotenceKey, sendPostHttps);
+//            System.out.println(sendPostHttps);
+            PaymentBean payment = new PaymentBean(sendPostHttps, null);
+            return payment;
         } catch (Exception e) {
             throw new RuntimeException(e);
         }

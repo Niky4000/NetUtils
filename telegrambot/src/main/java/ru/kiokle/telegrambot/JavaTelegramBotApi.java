@@ -28,6 +28,7 @@ import java.util.Date;
 import java.util.Enumeration;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArraySet;
@@ -82,7 +83,12 @@ public class JavaTelegramBotApi {
     private void createYookassaActiveProbingThread() {
         Thread yookassaThread = new Thread(() -> {
             while (true) {
-                h2.checkActivePayments();
+                h2.checkActivePayments((Map.Entry<ru.kiokle.telegrambot.db.bean.User, UserOrder> userEntry, PaymentBean payment) -> {
+                    synchronized (notifications) {
+                        notifications.add(new NotificationBean(userEntry.getKey().getChatId(), "Пользователь " + userEntry.getKey().getLogin() + " успешно оплатил заказ № " + userEntry.getValue().getId() + " на сумму " + payment.getAmount() + " руб! Будет зачислено " + payment.getIncomeAmount() + " руб!"));
+                    }
+                    notificationThread.interrupt();
+                });
                 waitSomeTime(60);
             }
         }, "yookassaThread");
@@ -147,7 +153,7 @@ public class JavaTelegramBotApi {
                         long chatId = update.message().chat().id();
                         User user = update.message().from();
                         h2.masterUser(user.username(), true, chatId);
-                        masterUsersSet.add(new MasterUserKey(update.message().from().username()));
+                        masterUsersSet.add(new MasterUserKey(update.message().from().username(), chatId));
                         createMessageAnswer(bot, chatId, null, "Пользователь " + user.username() + " был добавлен в качестве получателя сообщений о заказах!");
                     } else if (update.message() != null && update.message().text() != null && REMOVE_ME_FROM_MASTER_USERS.equals(update.message().text().toLowerCase())) {
                         long chatId = update.message().chat().id();
@@ -195,8 +201,14 @@ public class JavaTelegramBotApi {
                             if (!activeOrdersOfTheUser.isEmpty()) {
                                 ru.kiokle.telegrambot.db.bean.User user = h2.getUserByChatId(chatId);
                                 UserOrder userOrder = h2.getActiveUserOrder(user.getId());
+                                List<Order> orderList = restoreOrderMap(chatId);
+                                userOrder.setPrice(PriceUtils.getSum(orderList, configs.getPriceMap()));
                                 h2.cancelUserOrder(userOrder);
                                 orders.computeIfPresent(chatId, (k, v) -> null);
+                                synchronized (notifications) {
+                                    notifications.add(new NotificationBean(chatId, "Пользователь " + user.getLogin() + " отменил заказ № " + userOrder.getId() + " на сумму " + userOrder.getPrice() + " руб!"));
+                                }
+                                notificationThread.interrupt();
                                 createMessageAnswer(bot, chatId, callbackId, "Заказ № " + userOrder.getId() + " был отменён!");
                             } else {
                                 orders.computeIfPresent(chatId, (k, v) -> null);

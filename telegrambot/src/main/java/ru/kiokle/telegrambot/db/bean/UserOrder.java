@@ -66,4 +66,9 @@ public class UserOrder {
         this.active = active;
         return this;
     }
+
+    public UserOrder setFinished(boolean finished) {
+        this.finished = finished;
+        return this;
+    }
 }

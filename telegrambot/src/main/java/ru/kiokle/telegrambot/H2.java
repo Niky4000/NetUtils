@@ -6,6 +6,7 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Timestamp;
+import java.util.AbstractMap;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
@@ -16,6 +17,7 @@ import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -44,12 +46,15 @@ public class H2 {
     private static final String USER_ORDERS = "user_orders";
     private static final String ORDERS = "orders";
     private static final String PAYMENTS = "payments";
+    private static final String PAYMENT_RESPONSES = "payment_responses";
     private static final String ORDERS_COLUMNS = "o.id,o.user_id,o.name,o.price,o.quantity,uo.created,uo.finished,o.active";
+    private static final String USER_ORDER_COLUMNS = "id,user_id,created,price,finished,active";
     private AtomicLong masterUserId;
     private AtomicLong userId;
     private AtomicLong userOrderId;
     private AtomicLong orderId;
     private AtomicLong paymentId;
+    private AtomicLong paymentResponsesId;
 
     public H2(FileUtils fileUtils, OrderConfigsBean configs) {
         this.configs = configs;
@@ -64,6 +69,7 @@ public class H2 {
         userOrderId = getMaxId(USER_ORDERS);
         orderId = getMaxId(ORDERS);
         paymentId = getMaxId(PAYMENTS);
+        paymentResponsesId = getMaxId(PAYMENT_RESPONSES);
         Thread h2 = new Thread(() -> {
             if (connectionQueue.size() > 1) {
                 try {
@@ -246,6 +252,22 @@ public class H2 {
         });
     }
 
+    public User getUserById(Connection connection, long id) {
+        try (PreparedStatement statement = connection.prepareStatement("select login,chat_id from " + USERS + " where id=?")) {
+            statement.setLong(1, id);
+            try (ResultSet resultSet = statement.executeQuery()) {
+                if (resultSet.next()) {
+                    String login = resultSet.getString(1);
+                    Long chatId = resultSet.getLong(2);
+                    return new User(id, login, chatId);
+                }
+            }
+            return null;
+        } catch (SQLException ex) {
+            throw new RuntimeException(ex);
+        }
+    }
+
     public List<Order> getActiveOrdersOfTheUser(long chatId) {
         return handle(connection -> {
             try (PreparedStatement statement = connection.prepareStatement("select " + ORDERS_COLUMNS + " from " + ORDERS + " o inner join " + USER_ORDERS + " uo on o.user_id=uo.user_id and o.order_id=uo.id inner join " + USERS + " u on o.user_id=u.id where u.chat_id=? and o.active=? and uo.finished=? and uo.active=?")) {
@@ -334,16 +356,20 @@ public class H2 {
 
     private UserOrder updateUserOrder(UserOrder userOrder) {
         return handle(connection -> {
-            try (PreparedStatement statement = connection.prepareStatement("update " + USER_ORDERS + " set finished=?,active=? where id=?")) {
-                statement.setBoolean(1, userOrder.isFinished());
-                statement.setBoolean(2, userOrder.isActive());
-                statement.setLong(3, userOrder.getId());
-                statement.execute();
-                return userOrder;
-            } catch (SQLException ex) {
-                throw new RuntimeException(ex);
-            }
+            return updateUserOrder(connection, userOrder);
         });
+    }
+
+    private UserOrder updateUserOrder(Connection connection, UserOrder userOrder) throws RuntimeException {
+        try (PreparedStatement statement = connection.prepareStatement("update " + USER_ORDERS + " set finished=?,active=? where id=?")) {
+            statement.setBoolean(1, userOrder.isFinished());
+            statement.setBoolean(2, userOrder.isActive());
+            statement.setLong(3, userOrder.getId());
+            statement.execute();
+            return userOrder;
+        } catch (SQLException ex) {
+            throw new RuntimeException(ex);
+        }
     }
 
     private UserOrder addUserOrder(UserOrder userOrder) {
@@ -367,18 +393,13 @@ public class H2 {
     public UserOrder getActiveUserOrder(Long userId) {
         return handle(connection -> {
             List<Order> list = new ArrayList<>();
-            try (PreparedStatement statement = connection.prepareStatement("select id,created,price,finished,active from " + USER_ORDERS + " o where o.user_id=? and o.finished=? and o.active=?")) {
+            try (PreparedStatement statement = connection.prepareStatement("select " + USER_ORDER_COLUMNS + " from " + USER_ORDERS + " o where o.user_id=? and o.finished=? and o.active=?")) {
                 statement.setLong(1, userId);
                 statement.setBoolean(2, false);
                 statement.setBoolean(3, true);
                 try (ResultSet resultSet = statement.executeQuery()) {
                     if (resultSet.next()) {
-                        long id = resultSet.getLong(1);
-                        Date created = new Date(resultSet.getTimestamp(2).getTime());
-                        long price = resultSet.getLong(3);
-                        boolean finished = resultSet.getBoolean(4);
-                        boolean active = resultSet.getBoolean(5);
-                        return new UserOrder(id, userId, created, price, finished, active);
+                        return userOrderMapper(resultSet);
                     }
                 }
                 return null;
@@ -386,6 +407,30 @@ public class H2 {
                 throw new RuntimeException(ex);
             }
         });
+    }
+
+    private UserOrder getUserOrderById(Connection connection, Long id) {
+        try (PreparedStatement statement = connection.prepareStatement("select " + USER_ORDER_COLUMNS + " from " + USER_ORDERS + " o where o.id=?")) {
+            statement.setLong(1, id);
+            try (ResultSet resultSet = statement.executeQuery()) {
+                if (resultSet.next()) {
+                    return userOrderMapper(resultSet);
+                }
+            }
+            return null;
+        } catch (SQLException ex) {
+            throw new RuntimeException(ex);
+        }
+    }
+
+    private UserOrder userOrderMapper(final ResultSet resultSet) throws SQLException {
+        long id = resultSet.getLong(1);
+        long userId = resultSet.getLong(2);
+        Date created = new Date(resultSet.getTimestamp(3).getTime());
+        long price = resultSet.getLong(4);
+        boolean finished = resultSet.getBoolean(5);
+        boolean active = resultSet.getBoolean(6);
+        return new UserOrder(id, userId, created, price, finished, active);
     }
 
     public List<Order> getOrders(Long userId, Long orderId) {
@@ -422,19 +467,20 @@ public class H2 {
 
     public Long addPayment(UserOrder userOrder, PaymentBean payment) {
         return handle(connection -> {
-            try (PreparedStatement statement = connection.prepareStatement("insert into " + PAYMENTS + " (id,order_id,payment_id,idempotence_key,description,price,created,status,active,response) values(?,?,?,?,?,?,?,?,?,?)")) {
+            try (PreparedStatement statement = connection.prepareStatement("insert into " + PAYMENTS + " (id,order_id,payment_id,idempotence_key,description,price,created,status,active) values(?,?,?,?,?,?,?,?,?)");) {
                 long id = paymentId.getAndIncrement();
+                Timestamp created = new Timestamp(new Date().getTime());
                 statement.setLong(1, id);
                 statement.setLong(2, userOrder.getId());
                 statement.setString(3, payment.getPaymentId());
                 statement.setString(4, payment.getIdempotenceKey());
                 statement.setString(5, payment.getDescription());
                 statement.setLong(6, userOrder.getPrice());
-                statement.setTimestamp(7, new Timestamp(new Date().getTime()));
+                statement.setTimestamp(7, created);
                 statement.setString(8, payment.getStatus());
                 statement.setBoolean(9, true);
-                statement.setString(10, payment.getResponse());
                 statement.execute();
+                addPaymentResponse(connection, userOrder.getId(), id, created, payment.getStatus(), payment.getResponse());
                 return id;
             } catch (SQLException ex) {
                 throw new RuntimeException(ex);
@@ -442,10 +488,24 @@ public class H2 {
         });
     }
 
+    private void addPaymentResponse(Connection connection, Long orderId, Long paymentId, Timestamp created, String status, String response) {
+        try (PreparedStatement statement2 = connection.prepareStatement("insert into " + PAYMENT_RESPONSES + " (id,order_id,payment_id,created,status,response) values(?,?,?,?,?,?)")) {
+            statement2.setLong(1, paymentResponsesId.getAndIncrement());
+            statement2.setLong(2, orderId);
+            statement2.setLong(3, paymentId);
+            statement2.setTimestamp(4, created);
+            statement2.setString(5, status);
+            statement2.setString(6, response);
+            statement2.execute();
+        } catch (SQLException ex) {
+            throw new RuntimeException(ex);
+        }
+    }
+
     public List<Payment> getActivePayments(Long orderId) {
         return handle(connection -> {
             List<Payment> list = new ArrayList<>();
-            try (PreparedStatement statement = connection.prepareStatement("select id,payment_id,idempotence_key,description,price,created,status,response from " + PAYMENTS + " where order_id=? and active=?")) {
+            try (PreparedStatement statement = connection.prepareStatement("select id,payment_id,idempotence_key,description,price,created,status from " + PAYMENTS + " where order_id=? and active=?")) {
                 statement.setLong(1, orderId);
                 statement.setBoolean(2, true);
                 try (ResultSet resultSet = statement.executeQuery()) {
@@ -457,8 +517,7 @@ public class H2 {
                         long price = resultSet.getLong(5);
                         Date created = new Date(resultSet.getTimestamp(6).getTime());
                         String status = resultSet.getString(7);
-                        String response = resultSet.getString(8);
-                        list.add(new Payment(id, orderId, paymentId, idempotenceKey, description, price, created, true, status, response));
+                        list.add(new Payment(id, orderId, paymentId, idempotenceKey, description, price, created, true, status, null));
                     }
                     return list;
                 }
@@ -468,28 +527,76 @@ public class H2 {
         });
     }
 
-    public void checkActivePayments() {
+    public void checkActivePayments(BiConsumer<Entry<User, UserOrder>, PaymentBean> notify) {
         handle(connection -> {
-            try (PreparedStatement statement = connection.prepareStatement("select id,payment_id,idempotence_key,description,price,created,response from " + PAYMENTS + " where active=? and status=?")) {
+            try (PreparedStatement statement = connection.prepareStatement("select id,order_id,payment_id,idempotence_key,description,price,created from " + PAYMENTS + " where active=? and status=?")) {
                 statement.setBoolean(1, true);
                 statement.setString(2, "pending");
                 try (ResultSet resultSet = statement.executeQuery()) {
-                 {  "id" : "30e76794-000f-5001-9000-133422f807d0",  "status" : "succeeded",  "amount" : {    "value" : "800.00",    "currency" : "RUB"  },  "income_amount" : {    "value" : "772.00",    "currency" : "RUB"  },  "description" : "Заказ № 1",  "recipient" : {    "account_id" : "1226693",    "gateway_id" : "2595659"  },  "payment_method" : {    "type" : "bank_card",    "id" : "30e76794-000f-5001-9000-133422f807d0",    "saved" : false,    "status" : "inactive",    "title" : "Bank card *4477",    "card" : {      "first6" : "555555",      "last4" : "4477",      "expiry_year" : "2030",      "expiry_month" : "12",      "card_type" : "MasterCard",      "card_product" : {        "code" : "E"      },      "issuer_country" : "US"    }  },  "captured_at" : "2025-12-31T16:55:19.514Z",  "created_at" : "2025-12-31T16:48:20.501Z",  "test" : true,  "refunded_amount" : {    "value" : "0.00",    "currency" : "RUB"  },  "paid" : true,  "refundable" : true,  "metadata" : { },  "authorization_details" : {    "rrn" : "496046895097022",    "auth_code" : "857156",    "three_d_secure" : {      "applied" : true,      "protocol" : "v1",      "method_completed" : false,      "challenge_completed" : true    }  }}
-   while (resultSet.next()) {
+                    while (resultSet.next()) {
                         long id = resultSet.getLong(1);
-                        String paymentId = resultSet.getString(2);
-                        String idempotenceKey = resultSet.getString(3);
-                        String description = resultSet.getString(4);
-                        long price = resultSet.getLong(5);
-                        Date created = new Date(resultSet.getTimestamp(6).getTime());
-                        String response = resultSet.getString(7);
-                        yookassa.checkPayment(paymentId);
+                        long orderId = resultSet.getLong(2);
+                        String paymentId = resultSet.getString(3);
+                        String idempotenceKey = resultSet.getString(4);
+                        String description = resultSet.getString(5);
+                        long price = resultSet.getLong(6);
+                        Date created = new Date(resultSet.getTimestamp(7).getTime());
+                        PaymentBean newPayment = yookassa.checkPayment(paymentId);
+                        checkPayment(connection, orderId, newPayment, id, notify);
                     }
                 }
             } catch (SQLException ex) {
                 throw new RuntimeException(ex);
             }
         });
+    }
+
+    private void checkPayment(Connection connection, Long orderId, PaymentBean newPayment, Long paymentId, BiConsumer<Entry<User, UserOrder>, PaymentBean> notify) {
+        if (!"pending".equals(newPayment.getStatus())) {
+            addPaymentResponse(connection, orderId, paymentId, new Timestamp(new Date().getTime()), newPayment.getStatus(), newPayment.getResponse());
+            updatePaymentStatus(connection, newPayment.getStatus(), paymentId);
+            if ("succeeded".equals(newPayment.getStatus())) {
+                UserOrder userOrder = getUserOrderById(connection, orderId);
+                updateUserOrder(connection, userOrder.setFinished(true));
+                User user = getUserById(connection, userOrder.getUserId());
+                notify.accept(new AbstractMap.SimpleEntry<>(user, userOrder), newPayment);
+            }
+        }
+    }
+
+//    private List<Entry<Long, String>> getLastPaymentIdAndStatus(Connection connection, Long orderId) {
+//        List<Entry<Long, String>> list = new ArrayList<>();
+//        try (PreparedStatement statement = connection.prepareStatement("select payment_id,status from " + PAYMENT_RESPONSES + " where order_id=? order by created asc")) {
+//            statement.setLong(1, orderId);
+//            try (ResultSet resultSet = statement.executeQuery()) {
+//                while (resultSet.next()) {
+//                    long paymentId = resultSet.getLong(1);
+//                    Timestamp created = resultSet.getTimestamp(2);
+//                    try (PreparedStatement statement2 = connection.prepareStatement("select status from " + PAYMENT_RESPONSES + " where order_id=? and created=?")) {
+//                        statement2.setLong(1, orderId);
+//                        statement2.setTimestamp(2, created);
+//                        try (ResultSet resultSet2 = statement2.executeQuery()) {
+//                            if (resultSet2.next()) {
+//                                String status = resultSet2.getString(1);
+//                                list.add(new AbstractMap.SimpleEntry<>(paymentId, status));
+//                            }
+//                        }
+//                    }
+//                }
+//            }
+//            return list;
+//        } catch (SQLException ex) {
+//            throw new RuntimeException(ex);
+//        }
+//    }
+    public void updatePaymentStatus(Connection connection, String status, Long id) {
+        try (PreparedStatement statement = connection.prepareStatement("update " + PAYMENTS + " set status=? where id=?")) {
+            statement.setString(1, status);
+            statement.setLong(2, id);
+            statement.execute();
+        } catch (SQLException ex) {
+            throw new RuntimeException(ex);
+        }
     }
 
     public void cancelPayment(String idempotenceKey, String cancelResponse) {

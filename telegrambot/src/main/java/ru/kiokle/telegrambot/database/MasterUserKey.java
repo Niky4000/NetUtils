@@ -19,6 +19,12 @@ public class MasterUserKey {
         this.created = new Date();
     }
 
+    public MasterUserKey(String username, Long chatId) {
+        this.username = username;
+        this.chatId = chatId;
+        this.created = new Date();
+    }
+
     public MasterUserKey(Long id, String username, Long chatId) {
         this.id = id;
         this.username = username;
