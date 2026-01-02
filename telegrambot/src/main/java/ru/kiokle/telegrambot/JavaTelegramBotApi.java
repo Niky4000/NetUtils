@@ -9,6 +9,8 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.pengrad.telegrambot.TelegramBot;
 import com.pengrad.telegrambot.UpdatesListener;
+import com.pengrad.telegrambot.model.Update;
+import com.pengrad.telegrambot.model.User;
 import com.pengrad.telegrambot.model.request.InlineKeyboardButton;
 import com.pengrad.telegrambot.model.request.InlineKeyboardMarkup;
 import com.pengrad.telegrambot.model.request.InputMediaPhoto;
@@ -19,11 +21,29 @@ import com.pengrad.telegrambot.request.SendMediaGroup;
 import com.pengrad.telegrambot.request.SendMessage;
 import com.pengrad.telegrambot.request.SendPhoto;
 import java.io.File;
+import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Calendar;
+import java.util.Date;
+import java.util.Enumeration;
+import java.util.Iterator;
 import java.util.List;
-import java.util.Map;
+import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CopyOnWriteArraySet;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
+import java.util.stream.Collectors;
+import ru.kiokle.telegrambot.bean.OrderBean;
+import ru.kiokle.telegrambot.bean.OrderConfigsBean;
+import ru.kiokle.telegrambot.database.MasterUserKey;
+import ru.kiokle.telegrambot.database.NotificationBean;
+import ru.kiokle.telegrambot.db.bean.Order;
+import ru.kiokle.telegrambot.db.bean.OrderKey;
+import ru.kiokle.telegrambot.bean.PaymentBean;
+import ru.kiokle.telegrambot.db.bean.Payment;
+import ru.kiokle.telegrambot.db.bean.UserOrder;
+import ru.kiokle.telegrambot.utils.PriceUtils;
 
 /**
  *
@@ -31,14 +51,88 @@ import java.util.concurrent.atomic.AtomicInteger;
  */
 public class JavaTelegramBotApi {
 
-    private static final String COOKIES = "cookies";
-    private static final String BREAD = "bread";
-    private static final String ORDER = "order";
-    private static final Map<String, String> map = Map.of(COOKIES, "печенька", BREAD, "булочка");
+    OrderConfigsBean configs;
+    H2 h2;
+    AtomicReference<TelegramBot> botReference = new AtomicReference<>();
+    Thread notificationThread;
+    Yookassa yookassa;
+    boolean paymentEnabled;
+    private final String ORDER = "order";
+    private final String SHOW_MY_ORDERS = "show_my_orders";
+    private final String CANCEL_THIS_ORDER = "cancel_this_order";
+    private final String ADD_ME_TO_MASTER_USERS = "добавь меня в получатели";
+    private final String REMOVE_ME_FROM_MASTER_USERS = "убери меня из получателей";
 
-    private static final ConcurrentHashMap<Long, ConcurrentHashMap<String, AtomicInteger>> orders = new ConcurrentHashMap<>();
+    public JavaTelegramBotApi() throws IOException {
+        FileUtils fileUtils = new FileUtils();
+        configs = fileUtils.getConfigs();
+        h2 = new H2(fileUtils, configs);
+        createOrderCleanThread();
+        List<MasterUserKey> allMasterUsers = h2.getAllMasterUsers();
+        masterUsersSet.addAll(allMasterUsers);
+        createNotificationThread();
+        yookassa = new Yookassa(fileUtils, h2);
+        h2.setYookassa(yookassa);
+        paymentEnabled = Boolean.valueOf((String) fileUtils.getSystemProperties().get("payment_enabled"));
+        if (Boolean.valueOf((String) fileUtils.getSystemProperties().get("yookassaActiveProbing"))) {
+            createYookassaActiveProbingThread();
+        }
+    }
 
-    public static void start(String[] args) {
+    private void createYookassaActiveProbingThread() {
+        Thread yookassaThread = new Thread(() -> {
+            while (true) {
+                h2.checkActivePayments();
+                waitSomeTime(60);
+            }
+        }, "yookassaThread");
+        yookassaThread.setDaemon(true);
+        yookassaThread.start();
+    }
+
+    private void createNotificationThread() {
+        notificationThread = new Thread(() -> {
+            while (true) {
+                boolean interrupted = Thread.interrupted();
+                if (botReference.get() != null) {
+                    synchronized (notifications) {
+                        if (!notifications.isEmpty()) {
+                            TelegramBot bot = botReference.get();
+                            Iterator<NotificationBean> iterator = notifications.iterator();
+                            while (iterator.hasNext()) {
+                                NotificationBean bean = iterator.next();
+                                for (MasterUserKey master : masterUsersSet) {
+                                    createMessageAnswer(bot, master.getChatId(), null, bean.getMessage());
+                                }
+                            }
+                            notifications.clear();
+                        }
+                    }
+                }
+                waitSomeTime(10);
+            }
+        }, "notificationThread");
+        notificationThread.setDaemon(true);
+        notificationThread.start();
+    }
+
+    private void createOrderCleanThread() {
+        Thread ordersClean = new Thread(() -> {
+            while (true) {
+                cleanOrders();
+//                cleanMasterUsers();
+                waitSomeTime(10);
+            }
+        }, "ordersClean");
+        ordersClean.setDaemon(true);
+        ordersClean.start();
+    }
+
+    private final ConcurrentHashMap<Long, ConcurrentHashMap<OrderKey, AtomicInteger>> orders = new ConcurrentHashMap<>();
+    private final CopyOnWriteArraySet<MasterUserKey> masterUsersSet = new CopyOnWriteArraySet<>();
+    private final List<NotificationBean> notifications = new ArrayList();
+
+    public void start(String[] args) {
         if (args.length > 0) {
             String token = args[0];
 // Create your bot passing the token received from @BotFather
@@ -49,25 +143,69 @@ public class JavaTelegramBotApi {
                 // ... process updates
                 // return id of last processed update or confirm them all
                 updates.forEach(update -> {
-                    if (update.message() != null) {
+                    if (update.message() != null && update.message().text() != null && ADD_ME_TO_MASTER_USERS.equals(update.message().text().toLowerCase())) {
                         long chatId = update.message().chat().id();
-                        sendPhotoWithButton(bot, chatId, "/home/me/Булки/bread.jpg", "Булка классическая белая\n150 руб", BREAD);
-                        sendPhotoWithButton(bot, chatId, "/home/me/Булки/cookies.png", "Овсяные печеньки с корицей\n50 руб", COOKIES);
-                        sendOrderButton(bot, chatId);
-//                    SendResponse response = bot.execute(new SendMessage(chatId, "Hello!"));
-//                        sendPhotoWithButton(bot, chatId);
-//                        sendFotos(bot, chatId);
-//                        sendFotos2(bot, chatId);
+                        User user = update.message().from();
+                        h2.masterUser(user.username(), true, chatId);
+                        masterUsersSet.add(new MasterUserKey(update.message().from().username()));
+                        createMessageAnswer(bot, chatId, null, "Пользователь " + user.username() + " был добавлен в качестве получателя сообщений о заказах!");
+                    } else if (update.message() != null && update.message().text() != null && REMOVE_ME_FROM_MASTER_USERS.equals(update.message().text().toLowerCase())) {
+                        long chatId = update.message().chat().id();
+                        User user = update.message().from();
+                        h2.masterUser(user.username(), false, chatId);
+                        masterUsersSet.remove(new MasterUserKey(update.message().from().username()));
+                        createMessageAnswer(bot, chatId, null, "Пользователь " + user.username() + " был удалён из получателей сообщений о заказах!");
+                    } else if (update.message() != null) {
+                        if (checkMasterUser(update)) {
+                            showMainMenu(update, bot);
+                            showMasterUserMenu(update, bot);
+                        } else {
+                            showMainMenu(update, bot);
+                        }
                     } else if (update.callbackQuery() != null && update.callbackQuery().data() != null) {
                         CallbackDataBean callBackData = readCallBackData(update.callbackQuery().data());
                         Long chatId = callBackData.getChatId();
                         String callbackId = update.callbackQuery().id();
                         if (ORDER.equals(callBackData.getOrder())) {
-                            createOrderTotal(bot, chatId, callbackId);
+                            ru.kiokle.telegrambot.db.bean.User user = h2.getUserByChatId(chatId);
+                            if (user != null) {
+                                ConcurrentHashMap<OrderKey, AtomicInteger> currentOrders = orders.get(chatId);
+                                if (currentOrders != null && currentOrders.entrySet() != null) {
+                                    List<Order> orderList = currentOrders.entrySet().stream().map(e -> new Order(user.getId(), e.getKey().getName(), 0, e.getValue().get())).collect(Collectors.toList());
+                                    UserOrder order = h2.order(user.getId(), orderList);
+                                    createOrderTotal(bot, chatId, callbackId, order.setPrice(PriceUtils.getSum(orderList, configs.getPriceMap())), user, orderList);
+                                } else {
+                                    UserOrder order = h2.getActiveUserOrder(user.getId());
+                                    List<Order> orderList = restoreOrderMap(chatId);
+                                    createOrderTotal(bot, chatId, callbackId, order.setPrice(PriceUtils.getSum(orderList, configs.getPriceMap())), user, orderList);
+                                }
+                            }
+                        } else if (SHOW_MY_ORDERS.equals(callBackData.getOrder())) {
+                            List<Order> activeOrdersOfTheUser = h2.getActiveOrdersOfTheUser(chatId);
+                            if (!activeOrdersOfTheUser.isEmpty()) {
+                                ru.kiokle.telegrambot.db.bean.User user = h2.getUserByChatId(chatId);
+                                UserOrder userOrder = h2.getActiveUserOrder(user.getId());
+                                String orderMessage = getOrderMessage(activeOrdersOfTheUser);
+                                showOrderInfoButton(bot, chatId, userOrder.getId(), callbackId, orderMessage);
+                            } else {
+                                createMessageAnswer(bot, chatId, callbackId, "Нет активных заказов!");
+                            }
+                        } else if (CANCEL_THIS_ORDER.equals(callBackData.getOrder())) {
+                            List<Order> activeOrdersOfTheUser = h2.getActiveOrdersOfTheUser(chatId);
+                            if (!activeOrdersOfTheUser.isEmpty()) {
+                                ru.kiokle.telegrambot.db.bean.User user = h2.getUserByChatId(chatId);
+                                UserOrder userOrder = h2.getActiveUserOrder(user.getId());
+                                h2.cancelUserOrder(userOrder);
+                                orders.computeIfPresent(chatId, (k, v) -> null);
+                                createMessageAnswer(bot, chatId, callbackId, "Заказ № " + userOrder.getId() + " был отменён!");
+                            } else {
+                                orders.computeIfPresent(chatId, (k, v) -> null);
+                                createMessageAnswer(bot, chatId, callbackId, "Нет активных заказов!");
+                            }
                         } else if (callBackData.isAdd()) {
-                            createMessageSomethingWasAdded(bot, chatId, map.get(callBackData.getOrder()), callbackId);
+                            createMessageSomethingWasAdded(bot, chatId, callBackData.getOrder(), callbackId);
                         } else if (!callBackData.isAdd()) {
-                            createMessageSomethingWasRemoved(bot, chatId, map.get(callBackData.getOrder()), callbackId);
+                            createMessageSomethingWasRemoved(bot, chatId, callBackData.getOrder(), callbackId);
                         }
                     }
                 });
@@ -84,7 +222,58 @@ public class JavaTelegramBotApi {
                     e.printStackTrace();
                 }
             });
+            botReference.set(bot);
         }
+    }
+
+    private boolean checkMasterUser(Update update) {
+        if (update.message() != null && update.message().from() != null) {
+            if (masterUsersSet.contains(new MasterUserKey(update.message().from().username()))) {
+                return true;
+            } else {
+                MasterUserKey masterUser = h2.selectMasterUser(update.message().from().username());
+                if (masterUser.getId() > 0) {
+                    masterUsersSet.add(masterUser);
+                }
+                return masterUser.getId() > 0;
+            }
+        } else {
+            return false;
+        }
+    }
+
+    private void showMasterUserMenu(Update update, TelegramBot bot) {
+
+    }
+
+    private void showMainMenu(Update update, TelegramBot bot) {
+        long chatId = update.message().chat().id();
+        User user = update.message().from();
+        String username = user.username();
+        ru.kiokle.telegrambot.db.bean.User userDb = h2.getUserByChatId(chatId);
+        if (userDb == null) {
+            h2.addUser(username, null, null, chatId);
+        }
+        for (OrderBean order : configs.getOrders()) {
+            sendPhotoWithButton(bot, chatId, order.getPathToPicture(), order.getDescription() + ", " + order.getPrice() + " " + order.getCurrency(), order.getName());
+        }
+        sendOrderButton(bot, chatId);
+        List<Order> activeOrdersOfTheUser = h2.getActiveOrdersOfTheUser(chatId);
+        if (!activeOrdersOfTheUser.isEmpty()) {
+            showMyOrdersButton(bot, chatId);
+        }
+//                    SendResponse response = bot.execute(new SendMessage(chatId, "Hello!"));
+//                        sendPhotoWithButton(bot, chatId);
+//                        sendFotos(bot, chatId);
+//                        sendFotos2(bot, chatId);
+    }
+
+    private List<Order> restoreOrderMap(Long chatId) {
+        List<Order> orderList = h2.getActiveOrdersOfTheUser(chatId);
+        ConcurrentHashMap<OrderKey, AtomicInteger> concurrentHashMap = new ConcurrentHashMap<>();
+        orderList.forEach(o -> concurrentHashMap.put(new OrderKey(o.getName()), new AtomicInteger(o.getQuantity())));
+        orders.putIfAbsent(chatId, concurrentHashMap);
+        return orderList;
     }
 
     public static void sendFotos2(TelegramBot bot, long chatId) {
@@ -144,7 +333,7 @@ public class JavaTelegramBotApi {
         bot.execute(sendPhoto);
     }
 
-    private static void sendPhotoWithButton(TelegramBot bot, long chatId, String imagePath, String caption, String callbackData) {
+    private void sendPhotoWithButton(TelegramBot bot, long chatId, String imagePath, String caption, String callbackData) {
         InlineKeyboardMarkup markup = new InlineKeyboardMarkup();
         InlineKeyboardButton button = new InlineKeyboardButton("Заказать").callbackData(callBackData(chatId, callbackData, true));
         InlineKeyboardButton button2 = new InlineKeyboardButton("Убрать").callbackData(callBackData(chatId, callbackData, false));
@@ -156,6 +345,7 @@ public class JavaTelegramBotApi {
     private static String callBackData(long chatId, String callbackData, boolean add) {
         CallbackDataBean callbackDataBean = new CallbackDataBean();
         callbackDataBean.setChatId(chatId);
+//        callbackDataBean.setUsername(username);
         callbackDataBean.setAdd(add);
         callbackDataBean.setOrder(callbackData);
         ObjectMapper objectMapper = new ObjectMapper();
@@ -175,7 +365,7 @@ public class JavaTelegramBotApi {
         }
     }
 
-    private static void sendOrderButton(TelegramBot bot, long chatId) {
+    private void sendOrderButton(TelegramBot bot, long chatId) {
         InlineKeyboardMarkup markup = new InlineKeyboardMarkup();
         InlineKeyboardButton button = new InlineKeyboardButton("Оформить заказ").callbackData(callBackData(chatId, ORDER, true));
         markup.addRow(button);
@@ -184,39 +374,92 @@ public class JavaTelegramBotApi {
         bot.execute(message);
     }
 
-    private static void createOrderTotal(TelegramBot bot, long chatId, String callbackId) {
+    private void showMyOrdersButton(TelegramBot bot, long chatId) {
+        InlineKeyboardMarkup markup = new InlineKeyboardMarkup();
+        InlineKeyboardButton button = new InlineKeyboardButton("Показать мои заказы").callbackData(callBackData(chatId, SHOW_MY_ORDERS, true));
+        markup.addRow(button);
+        SendMessage message = new SendMessage(chatId, "Показать /menu");
+        message.replyMarkup(markup);
+        bot.execute(message);
+    }
+
+    private void showOrderInfoButton(TelegramBot bot, long chatId, long orderId, String callbackId, String orderMessage) {
+        if (callbackId != null) {
+            AnswerCallbackQuery answer = new AnswerCallbackQuery(callbackId);
+            bot.execute(answer);
+        }
+        InlineKeyboardMarkup markup = new InlineKeyboardMarkup();
+        InlineKeyboardButton button = new InlineKeyboardButton("Отменить заказ").callbackData(callBackData(chatId, CANCEL_THIS_ORDER, true));
+        markup.addRow(button);
+        SendMessage message = new SendMessage(chatId, "Заказ № " + orderId + ":\n" + orderMessage);
+        message.replyMarkup(markup);
+        bot.execute(message);
+    }
+
+    private void createOrderTotal(TelegramBot bot, long chatId, String callbackId, UserOrder userOrder, ru.kiokle.telegrambot.db.bean.User user, List<Order> orderList) {
         AnswerCallbackQuery answer = new AnswerCallbackQuery(callbackId);
         bot.execute(answer);
-        ConcurrentHashMap<String, AtomicInteger> currentOrders = orders.get(chatId);
-        if (!currentOrders.isEmpty()) {
-            StringBuilder sb = new StringBuilder("Ваш заказ:\n");
-            currentOrders.forEach((k, v) -> sb.append(k).append(": ").append(v).append("\n"));
-            SendMessage outMess = new SendMessage(chatId, sb.toString());
+//        ConcurrentHashMap<String, AtomicInteger> currentOrders = orders.get(chatId);
+        if (!orderList.isEmpty()) {
+            String orderMessage = getOrderMessage(orderList);
+            synchronized (notifications) {
+                notifications.add(new NotificationBean(chatId, "Пользователь " + user.getLogin() + " сделал заказ № " + userOrder.getId() + ":\n" + orderMessage));
+            }
+            notificationThread.interrupt();
+            StringBuilder message = new StringBuilder("Ваш заказ № " + userOrder.getId() + ":\n").append(orderMessage);
+            if (paymentEnabled) {
+                List<Payment> activePayments = h2.getActivePayments(userOrder.getId());
+                if (!(activePayments.size() == 1 && activePayments.get(0).getPrice() == userOrder.getPrice())) {
+//                activePayments.forEach(payment -> yookassa.cancelPayment(payment.getPaymentId(), payment.getIdempotenceKey()));
+                    PaymentBean payment = yookassa.createPayment(createIdempotenceKey(), userOrder);
+                    message.append("\n").append("Ваша ссылка на оплату ").append(userOrder.getPrice()).append(" руб").append(":\n").append(payment.getConfirmationUrl());
+                }
+            }
+            SendMessage outMess = new SendMessage(chatId, message.toString());
             bot.execute(outMess);
         } else {
             bot.execute(new SendMessage(chatId, "В заказе ничего нет"));
         }
     }
 
-    private static void createMessageSomethingWasAdded(TelegramBot bot, long chatId, String order, String callbackId) {
+    private static String createIdempotenceKey() {
+        return UUID.randomUUID().toString().replace("-", "").toLowerCase();
+    }
+
+    private String getOrderMessage(List<Order> orderList) {
+        StringBuilder sb = new StringBuilder();
+        orderList.forEach(o -> sb.append(o.getName()).append(": ").append(o.getQuantity()).append(" шт.").append("\n"));
+        return sb.toString();
+    }
+
+    private void createMessageAnswer(TelegramBot bot, long chatId, String callbackId, String message) {
+        if (callbackId != null) {
+            AnswerCallbackQuery answer = new AnswerCallbackQuery(callbackId);
+            bot.execute(answer);
+        }
+        SendMessage outMess = new SendMessage(chatId, message);
+        bot.execute(outMess);
+    }
+
+    private void createMessageSomethingWasAdded(TelegramBot bot, long chatId, String order, String callbackId) {
         AnswerCallbackQuery answer = new AnswerCallbackQuery(callbackId);
         bot.execute(answer);
         orders.putIfAbsent(chatId, new ConcurrentHashMap<>());
-        orders.get(chatId).putIfAbsent(order, new AtomicInteger(0));
-        orders.get(chatId).get(order).incrementAndGet();
+        orders.get(chatId).putIfAbsent(new OrderKey(order), new AtomicInteger(0));
+        orders.get(chatId).get(new OrderKey(order)).incrementAndGet();
         SendMessage outMess = new SendMessage(chatId, "Добавлена одна " + order + " в заказ.");
         bot.execute(outMess);
     }
 
-    private static void createMessageSomethingWasRemoved(TelegramBot bot, long chatId, String order, String callbackId) {
+    private void createMessageSomethingWasRemoved(TelegramBot bot, long chatId, String order, String callbackId) {
         AnswerCallbackQuery answer = new AnswerCallbackQuery(callbackId);
         bot.execute(answer);
         orders.putIfAbsent(chatId, new ConcurrentHashMap<>());
-        orders.get(chatId).putIfAbsent(order, new AtomicInteger(0));
-        orders.get(chatId).get(order).accumulateAndGet(-1, (i1, i2) -> {
+        orders.get(chatId).putIfAbsent(new OrderKey(order), new AtomicInteger(0));
+        orders.get(chatId).get(new OrderKey(order)).accumulateAndGet(-1, (i1, i2) -> {
             return i1 + i2 < 0 ? 0 : i1 + i2;
         });
-        orders.get(chatId).computeIfPresent(order, (k, v) -> v.get() == 0 ? null : v);
+        orders.get(chatId).computeIfPresent(new OrderKey(order), (k, v) -> v.get() == 0 ? null : v);
         SendMessage outMess = new SendMessage(chatId, "Убрана одна " + order + " из заказа.");
         bot.execute(outMess);
     }
@@ -235,4 +478,50 @@ public class JavaTelegramBotApi {
         return replyKeyboardMarkup;
     }
 
+    private void waitSomeTime(int seconds) {
+        try {
+            Thread.sleep(seconds * 1000);
+        } catch (InterruptedException ex) {
+//            ex.printStackTrace();
+        }
+    }
+
+    private void cleanMasterUsers() {
+        masterUsersSet.removeIf(u -> {
+            Calendar calendar = Calendar.getInstance();
+            calendar.setTime(new Date());
+            calendar.add(Calendar.DAY_OF_MONTH, -1);
+//            calendar.add(Calendar.MINUTE, -1);
+            Date yesterday = calendar.getTime();
+            return u.getCreated().before(yesterday);
+        });
+    }
+
+    private void cleanOrders() {
+        ConcurrentHashMap.KeySetView<Long, ConcurrentHashMap<OrderKey, AtomicInteger>> keySet = orders.keySet();
+        keySet.forEach(key -> {
+            orders.computeIfPresent(key, (chatId, map) -> {
+                if (map != null && !map.isEmpty()) {
+                    ConcurrentHashMap.KeySetView<OrderKey, AtomicInteger> keys = map.keySet();
+                    keys.forEach(k -> {
+                        map.computeIfPresent(k, (OrderKey ok, AtomicInteger v) -> {
+                            Calendar calendar = Calendar.getInstance();
+                            calendar.setTime(new Date());
+                            calendar.add(Calendar.DAY_OF_MONTH, -1);
+//                                    calendar.add(Calendar.MINUTE, -1);
+                            Date yesterday = calendar.getTime();
+                            if (ok.getCreated().before(yesterday)) {
+                                return null;
+                            } else {
+                                return v;
+                            }
+                        });
+                    });
+                    return map.isEmpty() ? null : map;
+                } else {
+                    return null;
+                }
+            });
+        });
+    }
 }

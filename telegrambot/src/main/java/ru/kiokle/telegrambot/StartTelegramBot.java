@@ -1,15 +1,22 @@
 package ru.kiokle.telegrambot;
 
+import ru.kiokle.telegrambot.bean.PaymentBean;
+
 /**
  * @author me
  */
 public class StartTelegramBot {
 
-    public static void main(String[] args) {
+    public static void main(String[] args) throws Exception {
 //        ConcurrentHashMap<String, AtomicInteger> concurrentHashMap = new ConcurrentHashMap<>();
 //        concurrentHashMap.put("Hello", new AtomicInteger(0));
 //        concurrentHashMap.computeIfPresent("Hello", (k, v) -> null);
-        JavaTelegramBotApi.start(args);
+
+//        String str = new ObjectMapper().writerWithDefaultPrettyPrinter().writeValueAsString(List.of(new OrderBean("/home/me/Булки/bread.jpg", "Булка классическая белая\n150 руб", "bread", "булочка"), new OrderBean("/home/me/Булки/cookies.png", "Овсяные печеньки с корицей\n50 руб", "cookies", "печенька")));
+        new JavaTelegramBotApi().start(args);
 //        TelegramBots.start(args);
+//        new Yookassa().testServer();
+//        new Yookassa().createPayment();
+//        new Payment("{  \"id\" : \"30e63953-000f-5001-9000-18e800ed4d95\",  \"status\" : \"pending\",  \"amount\" : {    \"value\" : \"100.00\",    \"currency\" : \"RUB\"  },  \"description\" : \"Заказ №2\",  \"recipient\" : {    \"account_id\" : \"1226693\",    \"gateway_id\" : \"2595659\"  },  \"created_at\" : \"2025-12-30T19:18:43.154Z\",  \"confirmation\" : {    \"type\" : \"redirect\",    \"confirmation_url\" : \"https://yoomoney.ru/checkout/payments/v2/contract?orderId=30e63953-000f-5001-9000-18e800ed4d95\"  },  \"test\" : true,  \"paid\" : false,  \"refundable\" : false,  \"metadata\" : { }}");
     }
 }
