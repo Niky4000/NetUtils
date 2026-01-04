@@ -48,6 +48,7 @@ import static ru.kiokle.telegrambot.enums.Messages.CANCEL_THIS_ORDER;
 import static ru.kiokle.telegrambot.enums.Messages.ORDER;
 import static ru.kiokle.telegrambot.enums.Messages.ORDER_HAS_BEEN_GIVEN;
 import static ru.kiokle.telegrambot.enums.Messages.SHOW_MY_ORDERS;
+import ru.kiokle.telegrambot.logs.Logs;
 import ru.kiokle.telegrambot.utils.MessageUtils;
 import static ru.kiokle.telegrambot.utils.PriceUtils.getSum;
 
@@ -62,6 +63,7 @@ public class JavaTelegramBotApi {
     AtomicReference<TelegramBot> botReference = new AtomicReference<>();
     Thread notificationThread;
     Yookassa yookassa;
+    Logs logs;
     boolean paymentEnabled;
     private final String ADD_ME_TO_MASTER_USERS = "добавь меня в получатели";
     private final String REMOVE_ME_FROM_MASTER_USERS = "убери меня из получателей";
@@ -69,9 +71,11 @@ public class JavaTelegramBotApi {
     private static final String THE_ORDER_WAS_NOT_GIVEN = "заказ не передан ";
 
     public JavaTelegramBotApi() throws IOException {
+        logs = new Logs();
+        logs.init();
         FileUtils fileUtils = new FileUtils();
         configs = fileUtils.getConfigs();
-        h2 = new H2(fileUtils, configs);
+        h2 = new H2(fileUtils, configs, logs);
         createOrderCleanThread();
         List<MasterUserKey> allMasterUsers = h2.getAllMasterUsers();
         masterUsersSet.addAll(allMasterUsers);
@@ -179,7 +183,7 @@ public class JavaTelegramBotApi {
                                     createMessageAnswer(bot, userChatId, null, "Заказ " + userOrder.getId() + " передан!");
                                     orders.remove(userChatId);
                                 } catch (Exception e) {
-                                    e.printStackTrace();
+                                    logs.log(e);
                                 }
                             }
                         } else if (update.message() != null && MENU.equals(update.message().text())) {
@@ -272,7 +276,7 @@ public class JavaTelegramBotApi {
                     e.response().description();
                 } else {
                     // probably network error
-                    e.printStackTrace();
+                    logs.log(e);
                 }
             });
             botReference.set(bot);
@@ -612,7 +616,7 @@ public class JavaTelegramBotApi {
         try {
             Thread.sleep(seconds * 1000);
         } catch (InterruptedException ex) {
-//            ex.printStackTrace();
+            logs.log(ex);
         }
     }
 

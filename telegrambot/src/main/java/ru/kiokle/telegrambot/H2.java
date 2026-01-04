@@ -31,6 +31,7 @@ import ru.kiokle.telegrambot.bean.PaymentBean;
 import ru.kiokle.telegrambot.db.bean.Payment;
 import ru.kiokle.telegrambot.db.bean.User;
 import ru.kiokle.telegrambot.db.bean.UserOrder;
+import ru.kiokle.telegrambot.logs.Logs;
 import ru.kiokle.telegrambot.utils.PriceUtils;
 
 public class H2 {
@@ -41,6 +42,7 @@ public class H2 {
     private String username = "sa"; // default H2 username
     private String password = ""; // default H2 password
     private BlockingQueue<Connection> connectionQueue = new LinkedBlockingQueue<>();
+    private final Logs logs;
     private static final int TIME_TO_WAIT = 10;
     private static final int POLL_TIMEOUT = 2;
     private static final String MASTER_USER = "master_user";
@@ -59,8 +61,9 @@ public class H2 {
     private AtomicLong paymentId;
     private AtomicLong paymentResponsesId;
 
-    public H2(FileUtils fileUtils, OrderConfigsBean configs) {
+    public H2(FileUtils fileUtils, OrderConfigsBean configs, Logs logs) {
         this.configs = configs;
+        this.logs = logs;
         jdbcUrl = "jdbc:h2:file:" + fileUtils.getDatabaseFile();
         try (Connection connection = DriverManager.getConnection(jdbcUrl, username, password)) {
             new DatabaseUpdates().update(connection);
@@ -79,15 +82,15 @@ public class H2 {
                     Connection conn = connectionQueue.poll(POLL_TIMEOUT, TimeUnit.SECONDS);
                     conn.close();
                 } catch (InterruptedException ex) {
-                    ex.printStackTrace();
+                    logs.log(ex);
                 } catch (SQLException ex) {
-                    ex.printStackTrace();
+                    logs.log(ex);
                 }
             }
             try {
                 Thread.sleep(TIME_TO_WAIT * 1000);
             } catch (InterruptedException ex) {
-                ex.printStackTrace();
+                logs.log(ex);
             }
         });
         h2.setName("H2");
