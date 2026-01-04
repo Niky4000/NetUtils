@@ -68,9 +68,6 @@ public class JavaTelegramBotApi {
     Thread notificationThread;
     Yookassa yookassa;
     boolean paymentEnabled;
-//    private final String ORDER = "order";
-//    private final String SHOW_MY_ORDERS = "show_my_orders";
-//    private final String CANCEL_THIS_ORDER = "cancel_this_order";
     private final String ADD_ME_TO_MASTER_USERS = "добавь меня в получатели";
     private final String REMOVE_ME_FROM_MASTER_USERS = "убери меня из получателей";
     private static final String THE_ORDER_WAS_GIVEN = "заказ передан ";
@@ -488,45 +485,6 @@ public class JavaTelegramBotApi {
         bot.execute(sendPhoto);
     }
 
-//    private static String callBackData(long chatId, String callbackData, boolean add) {
-//        CallbackDataBean callbackDataBean = new CallbackDataBean();
-//        callbackDataBean.setChatId(chatId);
-//        callbackDataBean.setAdd(add);
-//        callbackDataBean.setOrder(callbackData);
-//        ObjectMapper objectMapper = new ObjectMapper();
-//        try {
-//            return objectMapper.writeValueAsString(callbackDataBean);
-//        } catch (JsonProcessingException ex) {
-//            throw new RuntimeException(ex);
-//        }
-//    }
-//
-//    private static CallbackDataBean readCallBackData(String str) {
-//        ObjectMapper objectMapper = new ObjectMapper();
-//        try {
-//            return objectMapper.readValue(str, CallbackDataBean.class);
-//        } catch (JsonProcessingException ex) {
-//            throw new RuntimeException(ex);
-//        }
-//    }
-//
-//    private static String callbackOrderRecievedBean(CallbackOrderRecievedBean bean) {
-//        ObjectMapper objectMapper = new ObjectMapper();
-//        try {
-//            return objectMapper.writeValueAsString(bean);
-//        } catch (JsonProcessingException ex) {
-//            throw new RuntimeException(ex);
-//        }
-//    }
-//
-//    private static CallbackOrderRecievedBean readCallbackOrderRecievedBean(String str) {
-//        ObjectMapper objectMapper = new ObjectMapper();
-//        try {
-//            return objectMapper.readValue(str, CallbackOrderRecievedBean.class);
-//        } catch (JsonProcessingException ex) {
-//            throw new RuntimeException(ex);
-//        }
-//    }
     private void sendOrderButton(TelegramBot bot, long chatId) {
         InlineKeyboardMarkup markup = new InlineKeyboardMarkup();
         InlineKeyboardButton button = new InlineKeyboardButton("Оформить заказ").callbackData(new CallbackDataBean(ORDER, "", true, chatId).toString());
