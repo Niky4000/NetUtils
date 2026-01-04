@@ -15,7 +15,7 @@ public class Payment {
     String status;
     String response;
 
-    public Payment(long id, long orderId, String paymentId, String idempotenceKey, String description, long price, Date created, boolean active, String status, String response) {
+    public Payment(long id, long orderId, String paymentId, String idempotenceKey, String description, long price, Date created, boolean active, String status) {
         this.id = id;
         this.orderId = orderId;
         this.paymentId = paymentId;
@@ -25,7 +25,6 @@ public class Payment {
         this.created = created;
         this.active = active;
         this.status = status;
-        this.response = response;
     }
 
     public long getId() {

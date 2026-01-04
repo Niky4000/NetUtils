@@ -29,6 +29,9 @@ import java.util.Enumeration;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
+import java.util.Set;
+import java.util.TreeMap;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArraySet;
@@ -45,6 +48,7 @@ import ru.kiokle.telegrambot.bean.PaymentBean;
 import ru.kiokle.telegrambot.db.bean.Payment;
 import ru.kiokle.telegrambot.db.bean.UserOrder;
 import ru.kiokle.telegrambot.utils.PriceUtils;
+import static ru.kiokle.telegrambot.utils.PriceUtils.getSum;
 
 /**
  *
@@ -63,6 +67,7 @@ public class JavaTelegramBotApi {
     private final String CANCEL_THIS_ORDER = "cancel_this_order";
     private final String ADD_ME_TO_MASTER_USERS = "добавь меня в получатели";
     private final String REMOVE_ME_FROM_MASTER_USERS = "убери меня из получателей";
+    private final String ORDER_HAS_BEEN_GIVEN = "order_has_been_given";
 
     public JavaTelegramBotApi() throws IOException {
         FileUtils fileUtils = new FileUtils();
@@ -161,13 +166,45 @@ public class JavaTelegramBotApi {
                         h2.masterUser(user.username(), false, chatId);
                         masterUsersSet.remove(new MasterUserKey(update.message().from().username()));
                         createMessageAnswer(bot, chatId, null, "Пользователь " + user.username() + " был удалён из получателей сообщений о заказах!");
-                    } else if (update.message() != null) {
-                        if (checkMasterUser(update)) {
+                    } else if (checkMasterUser(update) && (update.message() != null || (update.callbackQuery() != null && update.callbackQuery().data() != null))) {
+                        if (update.callbackQuery() != null && update.callbackQuery().data() != null) {
+                            CallbackDataBean callBackData = readCallBackData(update.callbackQuery().data());
+                            Long chatId = callBackData.getChatId();
+                            if (callBackData.getOrder() != null && callBackData.getOrder().startsWith(ORDER_HAS_BEEN_GIVEN)) {
+                                try {
+                                    Long masterChatId = Long.valueOf(callBackData.getOrder().replace(ORDER_HAS_BEEN_GIVEN + "_", ""));
+                                    ru.kiokle.telegrambot.db.bean.User user = h2.getUserByChatId(chatId);
+                                    UserOrder userOrder = h2.getUserOrderByUserId(user.getId());
+                                    h2.userOrder(userOrder.setFinished(true));
+                                    createMessageAnswer(bot, masterChatId, null, "Заказ " + userOrder.getId() + " завершён!");
+                                } catch (Exception e) {
+                                    e.printStackTrace();
+                                }
+                            }
+                        } else if (update.message() != null && MENU.equals(update.message().text())) {
                             showMainMenu(update, bot);
-                            showMasterUserMenu(update, bot);
+                        } else if (update.message() != null && ORDERS.equals(update.message().text())) {
+                            showOrders(update, bot);
+                        } else if (update.message() != null && PAID.equals(update.message().text())) {
+                            showPaidOrders(update, bot);
+                        } else if (update.message() != null && WHO_ORDERED.equals(update.message().text())) {
+                            showOrdersByUsers(update, bot);
+                        } else if (update.message() != null && update.message().text() != null && update.message().text().toLowerCase().startsWith(THE_ORDER_WAS_NOT_GIVEN)) {
+                            long chatId = update.message().chat().id();
+                            String str = update.message().text().toLowerCase().replace(THE_ORDER_WAS_NOT_GIVEN, "");
+                            try {
+                                Long orderId = Long.valueOf(str);
+                                UserOrder userOrder = h2.getUserOrder(orderId);
+                                h2.userOrder(userOrder.setFinished(false));
+                                createMessageAnswer(bot, chatId, null, "Заказ " + orderId + " помечен, как не переданный!");
+                            } catch (Exception e) {
+                                createMessageAnswer(bot, chatId, null, "Не понятен номер заказа!");
+                            }
                         } else {
-                            showMainMenu(update, bot);
+                            showMasterUserMenu(update, bot);
                         }
+                    } else if (update.message() != null) {
+                        showMainMenu(update, bot);
                     } else if (update.callbackQuery() != null && update.callbackQuery().data() != null) {
                         CallbackDataBean callBackData = readCallBackData(update.callbackQuery().data());
                         Long chatId = callBackData.getChatId();
@@ -177,13 +214,13 @@ public class JavaTelegramBotApi {
                             if (user != null) {
                                 ConcurrentHashMap<OrderKey, AtomicInteger> currentOrders = orders.get(chatId);
                                 if (currentOrders != null && currentOrders.entrySet() != null) {
-                                    List<Order> orderList = currentOrders.entrySet().stream().map(e -> new Order(user.getId(), e.getKey().getName(), 0, e.getValue().get())).collect(Collectors.toList());
+                                    List<Order> orderList = currentOrders.entrySet().stream().map(e -> new Order(user.getId(), e.getKey().getName(), getSum(e.getKey().getName(), e.getValue().get(), configs.getPriceMap()), e.getValue().get())).collect(Collectors.toList());
                                     UserOrder order = h2.order(user.getId(), orderList);
-                                    createOrderTotal(bot, chatId, callbackId, order.setPrice(PriceUtils.getSum(orderList, configs.getPriceMap())), user, orderList);
+                                    createOrderTotal(bot, chatId, callbackId, order, user, orderList);
                                 } else {
-                                    UserOrder order = h2.getActiveUserOrder(user.getId());
                                     List<Order> orderList = restoreOrderMap(chatId);
-                                    createOrderTotal(bot, chatId, callbackId, order.setPrice(PriceUtils.getSum(orderList, configs.getPriceMap())), user, orderList);
+                                    UserOrder order = h2.getActiveUserOrder(user.getId());
+                                    createOrderTotal(bot, chatId, callbackId, order, user, orderList);
                                 }
                             }
                         } else if (SHOW_MY_ORDERS.equals(callBackData.getOrder())) {
@@ -201,8 +238,6 @@ public class JavaTelegramBotApi {
                             if (!activeOrdersOfTheUser.isEmpty()) {
                                 ru.kiokle.telegrambot.db.bean.User user = h2.getUserByChatId(chatId);
                                 UserOrder userOrder = h2.getActiveUserOrder(user.getId());
-                                List<Order> orderList = restoreOrderMap(chatId);
-                                userOrder.setPrice(PriceUtils.getSum(orderList, configs.getPriceMap()));
                                 h2.cancelUserOrder(userOrder);
                                 orders.computeIfPresent(chatId, (k, v) -> null);
                                 synchronized (notifications) {
@@ -237,9 +272,17 @@ public class JavaTelegramBotApi {
             botReference.set(bot);
         }
     }
+    private static final String THE_ORDER_WAS_NOT_GIVEN = "заказ не передан ";
+
+    private static final String MENU = "/menu";
+    private static final String ORDERS = "/orders";
+    private static final String PAID = "/paid";
+    private static final String WHO_ORDERED = "/whoOrdered";
 
     private boolean checkMasterUser(Update update) {
-        if (update.message() != null && update.message().from() != null) {
+        if (checkForSystemCommands(update)) {
+            return true;
+        } else if (update.message() != null && update.message().from() != null) {
             if (masterUsersSet.contains(new MasterUserKey(update.message().from().username()))) {
                 return true;
             } else {
@@ -254,8 +297,96 @@ public class JavaTelegramBotApi {
         }
     }
 
-    private void showMasterUserMenu(Update update, TelegramBot bot) {
+    private final Set<String> systemCommands = Set.of(ORDER_HAS_BEEN_GIVEN);
 
+    private boolean checkForSystemCommands(Update update) {
+        if (update.callbackQuery() != null && update.callbackQuery().data() != null) {
+            CallbackDataBean callBackData = readCallBackData(update.callbackQuery().data());
+            return systemCommands.contains(callBackData.getOrder());
+        } else {
+            return false;
+        }
+    }
+
+    private void showMasterUserMenu(Update update, TelegramBot bot) {
+        long chatId = update.message().chat().id();
+        createMessageAnswer(bot, chatId, null,
+                MENU + " - Отобразить меню\n"
+                + ORDERS + " - Что заказано?\n"
+                + PAID + " - Что оплачено?\n"
+                + WHO_ORDERED + " - Кто и что заказал?\n");
+    }
+
+    private void showOrders(Update update, TelegramBot bot) {
+        long chatId = update.message().chat().id();
+        List<Order> orders = h2.getActiveOrders();
+        if (!orders.isEmpty()) {
+            Map<String, Integer> map = new TreeMap<>(orders.stream().collect(Collectors.toMap(Order::getName, Order::getQuantity, (q1, q2) -> q1 + q2)));
+            StringBuilder sb = new StringBuilder("-- Заказы --\n");
+            for (Entry<String, Integer> order : map.entrySet()) {
+                sb.append(order.getKey()).append(" - ").append(order.getValue()).append(" шт.\n");
+            }
+            sb.append("Сумма: " + orders.stream().mapToLong(o -> o.getPrice() * o.getQuantity()).sum() + " руб.\n");
+            sb.append("------------");
+            createMessageAnswer(bot, chatId, null, sb.toString());
+        } else {
+            createMessageAnswer(bot, chatId, null, "Нет заказов.");
+        }
+    }
+
+    private void showPaidOrders(Update update, TelegramBot bot) {
+        long chatId = update.message().chat().id();
+        List<UserOrder> paidUserOrderList = h2.getPaidUserOrder();
+        if (!paidUserOrderList.isEmpty()) {
+            createMessageAnswer(bot, chatId, null, "-- Заказы --");
+            for (UserOrder userOrder : paidUserOrderList) {
+                StringBuilder sb = new StringBuilder();
+                ru.kiokle.telegrambot.db.bean.User user = h2.getUserById(userOrder.getUserId());
+                List<Order> orders = h2.getOrdersByUserOrderId(userOrder.getId());
+                Map<String, Integer> map = new TreeMap<>(orders.stream().collect(Collectors.toMap(Order::getName, Order::getQuantity, (q1, q2) -> q1 + q2)));
+                sb.append(user.getLogin()).append(":\n");
+                for (Entry<String, Integer> order : map.entrySet()) {
+                    sb.append(order.getKey()).append(" - ").append(order.getValue()).append(" шт.\n");
+                }
+                sb.append("Сумма: " + orders.stream().mapToLong(o -> o.getPrice() * o.getQuantity()).sum() + " руб.\n");
+                sb.append("------------");
+//                createMessageAnswer(bot, chatId, null, sb.toString());
+                showButtonWithText(bot, chatId, user.getChatId(), "Заказ передан", ORDER_HAS_BEEN_GIVEN + "_" + chatId, sb.toString());
+            }
+//            createMessageAnswer(bot, chatId, null, "------------");
+        } else {
+            createMessageAnswer(bot, chatId, null, "Нет оплаченных заказов.");
+        }
+    }
+
+    private void showOrdersByUsers(Update update, TelegramBot bot) {
+        long chatId = update.message().chat().id();
+        List<Order> orders = h2.getActiveOrders();
+        if (!orders.isEmpty()) {
+            Map<Long, Map<String, Integer>> userIdMap = new TreeMap<>(orders.stream().collect(Collectors.groupingBy(Order::getUserId, Collectors.collectingAndThen(Collectors.toList(), list -> new TreeMap<>(list.stream().collect(Collectors.toMap(Order::getName, Order::getQuantity, (q1, q2) -> q1 + q2)))))));
+            createMessageAnswer(bot, chatId, null, "-- Заказы --");
+            for (Entry<Long, Map<String, Integer>> entry : userIdMap.entrySet()) {
+                Long userId = entry.getKey();
+                StringBuilder sb = new StringBuilder();
+                Map<String, Integer> map = entry.getValue();
+                ru.kiokle.telegrambot.db.bean.User user = h2.getUserById(userId);
+                UserOrder userOrder = h2.getActiveUserOrder(user.getId());
+                sb.append(user.getLogin()).append(":\n");
+                for (Entry<String, Integer> order : map.entrySet()) {
+                    sb.append(order.getKey()).append(" - ").append(order.getValue()).append(" шт.\n");
+                    if (userOrder.isPaid()) {
+                        sb.append("Оплачено!\n");
+                    } else {
+                        sb.append("Не оплачено!\n");
+                    }
+                }
+                sb.append("Сумма: " + orders.stream().mapToLong(o -> o.getPrice() * o.getQuantity()).sum() + " руб.\n");
+                showButtonWithText(bot, chatId, user.getChatId(), "Заказ передан", ORDER_HAS_BEEN_GIVEN + "_" + chatId, sb.toString());
+            }
+            createMessageAnswer(bot, chatId, null, "------------");
+        } else {
+            createMessageAnswer(bot, chatId, null, "Нет заказов.");
+        }
     }
 
     private void showMainMenu(Update update, TelegramBot bot) {
@@ -274,10 +405,6 @@ public class JavaTelegramBotApi {
         if (!activeOrdersOfTheUser.isEmpty()) {
             showMyOrdersButton(bot, chatId);
         }
-//                    SendResponse response = bot.execute(new SendMessage(chatId, "Hello!"));
-//                        sendPhotoWithButton(bot, chatId);
-//                        sendFotos(bot, chatId);
-//                        sendFotos2(bot, chatId);
     }
 
     private List<Order> restoreOrderMap(Long chatId) {
@@ -357,7 +484,6 @@ public class JavaTelegramBotApi {
     private static String callBackData(long chatId, String callbackData, boolean add) {
         CallbackDataBean callbackDataBean = new CallbackDataBean();
         callbackDataBean.setChatId(chatId);
-//        callbackDataBean.setUsername(username);
         callbackDataBean.setAdd(add);
         callbackDataBean.setOrder(callbackData);
         ObjectMapper objectMapper = new ObjectMapper();
@@ -408,6 +534,15 @@ public class JavaTelegramBotApi {
         bot.execute(message);
     }
 
+    private void showButtonWithText(TelegramBot bot, long chatId, long userChatId, String buttonText, String buttonEvent, String text) {
+        InlineKeyboardMarkup markup = new InlineKeyboardMarkup();
+        InlineKeyboardButton button = new InlineKeyboardButton(buttonText).callbackData(callBackData(userChatId, buttonEvent, true));
+        markup.addRow(button);
+        SendMessage message = new SendMessage(chatId, text);
+        message.replyMarkup(markup);
+        bot.execute(message);
+    }
+
     private void createOrderTotal(TelegramBot bot, long chatId, String callbackId, UserOrder userOrder, ru.kiokle.telegrambot.db.bean.User user, List<Order> orderList) {
         AnswerCallbackQuery answer = new AnswerCallbackQuery(callbackId);
         bot.execute(answer);
@@ -415,17 +550,19 @@ public class JavaTelegramBotApi {
         if (!orderList.isEmpty()) {
             String orderMessage = getOrderMessage(orderList);
             synchronized (notifications) {
-                notifications.add(new NotificationBean(chatId, "Пользователь " + user.getLogin() + " сделал заказ № " + userOrder.getId() + ":\n" + orderMessage));
+                notifications.add(new NotificationBean(chatId, "Пользователь " + user.getLogin() + " сделал заказ № " + userOrder.getId() + ":\n" + orderMessage + "На сумму " + userOrder.getPrice() + "!"));
             }
             notificationThread.interrupt();
             StringBuilder message = new StringBuilder("Ваш заказ № " + userOrder.getId() + ":\n").append(orderMessage);
             if (paymentEnabled) {
                 List<Payment> activePayments = h2.getActivePayments(userOrder.getId());
-                if (!(activePayments.size() == 1 && activePayments.get(0).getPrice() == userOrder.getPrice())) {
-//                activePayments.forEach(payment -> yookassa.cancelPayment(payment.getPaymentId(), payment.getIdempotenceKey()));
-                    PaymentBean payment = yookassa.createPayment(createIdempotenceKey(), userOrder);
-                    message.append("\n").append("Ваша ссылка на оплату ").append(userOrder.getPrice()).append(" руб").append(":\n").append(payment.getConfirmationUrl());
+                PaymentBean payment;
+                if (!(!activePayments.isEmpty() && activePayments.get(activePayments.size() - 1).getPrice() == userOrder.getPrice())) {
+                    payment = yookassa.createPayment(createIdempotenceKey(), userOrder);
+                } else {
+                    payment = h2.getFirstPendingPaymentResponse(activePayments.get(activePayments.size() - 1).getId());
                 }
+                message.append("\n").append("Ваша ссылка на оплату ").append(userOrder.getPrice()).append(" руб").append(":\n").append(payment.getConfirmationUrl());
             }
             SendMessage outMess = new SendMessage(chatId, message.toString());
             bot.execute(outMess);

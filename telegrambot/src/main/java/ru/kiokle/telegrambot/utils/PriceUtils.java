@@ -9,4 +9,8 @@ public class PriceUtils {
     public static long getSum(List<Order> orderList, Map<String, Long> priceMap) {
         return orderList.stream().mapToLong(o -> priceMap.get(o.getName()) * o.getQuantity()).sum();
     }
+
+    public static long getSum(String orderName, int quantity, Map<String, Long> priceMap) {
+        return priceMap.get(orderName) * quantity;
+    }
 }
