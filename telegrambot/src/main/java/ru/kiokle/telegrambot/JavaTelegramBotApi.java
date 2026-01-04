@@ -177,6 +177,7 @@ public class JavaTelegramBotApi {
                                     String callbackId = update.callbackQuery().id();
                                     createMessageAnswer(bot, masterChatId, callbackId, "Заказ " + userOrder.getId() + " завершён!");
                                     createMessageAnswer(bot, userChatId, null, "Заказ " + userOrder.getId() + " передан!");
+                                    orders.remove(userChatId);
                                 } catch (Exception e) {
                                     e.printStackTrace();
                                 }
@@ -199,6 +200,9 @@ public class JavaTelegramBotApi {
                                 h2.updateUserOrder(userOrder.setFinished(update.message().text().toLowerCase().startsWith(THE_ORDER_WAS_NOT_GIVEN) ? false : true));
                                 createMessageAnswer(bot, chatId, null, "Заказ " + orderId + " помечен, как не переданный!");
                                 createMessageAnswer(bot, user.getChatId(), null, "Заказ " + userOrder.getId() + " помечен, как не переданный!");
+                                if (update.message().text().toLowerCase().startsWith(THE_ORDER_WAS_GIVEN)) {
+                                    orders.remove(user.getChatId());
+                                }
                             } catch (Exception e) {
                                 createMessageAnswer(bot, chatId, null, "Не понятен номер заказа!");
                             }
