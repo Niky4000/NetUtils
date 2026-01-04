@@ -391,7 +391,7 @@ public class H2 {
         updateUserOrder(userOrder.setActive(false));
     }
 
-    private UserOrder updateUserOrder(UserOrder userOrder) {
+    public UserOrder updateUserOrder(UserOrder userOrder) {
         return handle(connection -> {
             return updateUserOrder(connection, userOrder);
         });
