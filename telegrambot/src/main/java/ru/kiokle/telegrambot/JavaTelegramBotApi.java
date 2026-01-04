@@ -5,6 +5,7 @@
  */
 package ru.kiokle.telegrambot;
 
+import ru.kiokle.telegrambot.bean.CallbackDataBean;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.pengrad.telegrambot.TelegramBot;
