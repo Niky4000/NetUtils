@@ -158,17 +158,17 @@ public class JavaTelegramBotApi {
                 // return id of last processed update or confirm them all
                 updates.forEach(update -> {
                     if (update.message() != null && update.message().text() != null && ADD_ME_TO_MASTER_USERS.equals(update.message().text().toLowerCase())) {
+                        String username = getUsername(update.message().from());
                         long chatId = update.message().chat().id();
-                        User user = update.message().from();
-                        h2.masterUser(user.username(), true, chatId);
-                        masterUsersSet.add(new MasterUserKey(update.message().from().username(), chatId));
-                        createMessageAnswer(bot, chatId, null, "Пользователь " + user.username() + " был добавлен в качестве получателя сообщений о заказах!");
+                        h2.masterUser(username, true, chatId);
+                        masterUsersSet.add(new MasterUserKey(username, chatId));
+                        createMessageAnswer(bot, chatId, null, "Пользователь " + username + " был добавлен в качестве получателя сообщений о заказах!");
                     } else if (update.message() != null && update.message().text() != null && REMOVE_ME_FROM_MASTER_USERS.equals(update.message().text().toLowerCase())) {
+                        String username = getUsername(update.message().from());
                         long chatId = update.message().chat().id();
-                        User user = update.message().from();
-                        h2.masterUser(user.username(), false, chatId);
-                        masterUsersSet.remove(new MasterUserKey(update.message().from().username()));
-                        createMessageAnswer(bot, chatId, null, "Пользователь " + user.username() + " был удалён из получателей сообщений о заказах!");
+                        h2.masterUser(username, false, chatId);
+                        masterUsersSet.remove(new MasterUserKey(username));
+                        createMessageAnswer(bot, chatId, null, "Пользователь " + username + " был удалён из получателей сообщений о заказах!");
                     } else if (checkMasterUser(update) && (update.message() != null || (update.callbackQuery() != null && update.callbackQuery().data() != null))) {
                         if (update.callbackQuery() != null && update.callbackQuery().data() != null) {
                             CallbackOrderRecievedBean callBackData = CallbackOrderRecievedBean.fromString(update.callbackQuery().data());
@@ -292,10 +292,10 @@ public class JavaTelegramBotApi {
         if (checkForSystemCommands(update, str -> MessageUtils.fromString(str))) {
             return true;
         } else if (update.message() != null && update.message().from() != null) {
-            if (masterUsersSet.contains(new MasterUserKey(update.message().from().username()))) {
+            if (masterUsersSet.contains(new MasterUserKey(getUsername(update.message().from())))) {
                 return true;
             } else {
-                MasterUserKey masterUser = h2.selectMasterUser(update.message().from().username());
+                MasterUserKey masterUser = h2.selectMasterUser(getUsername(update.message().from()));
                 if (masterUser.getId() > 0) {
                     masterUsersSet.add(masterUser);
                 }
@@ -322,7 +322,7 @@ public class JavaTelegramBotApi {
         createMessageAnswer(bot, chatId, null,
                 MENU + " - Отобразить меню\n"
                 + ORDERS + " - Что заказано?\n"
-                + PAID + " - Что оплачено?\n"
+                + (paymentEnabled ? PAID + " - Что оплачено?\n" : "")
                 + WHO_ORDERED + " - Кто и что заказал?\n");
     }
 
@@ -383,10 +383,12 @@ public class JavaTelegramBotApi {
                 for (Entry<String, Integer> order : map.entrySet()) {
                     sb.append(order.getKey()).append(" - ").append(order.getValue()).append(" шт.\n");
                 }
-                if (userOrder.isPaid()) {
-                    sb.append("Оплачено!\n");
-                } else {
-                    sb.append("Не оплачено!\n");
+                if (paymentEnabled) {
+                    if (userOrder.isPaid()) {
+                        sb.append("Оплачено!\n");
+                    } else {
+                        sb.append("Не оплачено!\n");
+                    }
                 }
                 sb.append("Сумма: " + orders.stream().mapToLong(o -> o.getPrice()).sum() + " руб.\n");
                 showButtonWithText(bot, chatId, "Заказ передан", sb.toString(), new CallbackOrderRecievedBean(ORDER_HAS_BEEN_GIVEN, chatId, user.getChatId(), userOrder.getId()).toString());
@@ -398,8 +400,7 @@ public class JavaTelegramBotApi {
 
     private void showMainMenu(Update update, TelegramBot bot) {
         long chatId = update.message().chat().id();
-        User user = update.message().from();
-        String username = user.username();
+        String username = getUsername(update.message().from());
         ru.kiokle.telegrambot.db.bean.User userDb = h2.getUserByChatId(chatId);
         if (userDb == null) {
             h2.addUser(username, null, null, chatId);
@@ -411,6 +412,18 @@ public class JavaTelegramBotApi {
         List<Order> activeOrdersOfTheUser = h2.getActiveOrdersOfTheUser(chatId);
         if (!activeOrdersOfTheUser.isEmpty()) {
             showMyOrdersButton(bot, chatId);
+        }
+    }
+
+    private String getUsername(User user) {
+        if (user.username() == null) {
+            if (user.firstName() != null && user.lastName() != null) {
+                return user.firstName() + " " + user.lastName();
+            } else {
+                return user.id().toString();
+            }
+        } else {
+            return user.username();
         }
     }
 
@@ -535,7 +548,7 @@ public class JavaTelegramBotApi {
         if (!orderList.isEmpty()) {
             String orderMessage = getOrderMessage(orderList);
             synchronized (notifications) {
-                notifications.add(new NotificationBean(chatId, "Пользователь " + user.getLogin() + " сделал заказ № " + userOrder.getId() + ":\n" + orderMessage + "На сумму " + userOrder.getPrice() + "!"));
+                notifications.add(new NotificationBean(chatId, "Пользователь " + user.getLogin() + " сделал заказ № " + userOrder.getId() + ":\n" + orderMessage + "На сумму " + userOrder.getPrice() + " руб!"));
             }
             notificationThread.interrupt();
             StringBuilder message = new StringBuilder("Ваш заказ № " + userOrder.getId() + ":\n").append(orderMessage);
