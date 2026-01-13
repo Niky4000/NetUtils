@@ -8,17 +8,21 @@ public class OrderBean {
     private String currency;
     private String type;
     private String name;
+    private String addButtonName;
+    private String removeButtonName;
 
     public OrderBean() {
     }
 
-    public OrderBean(String pathToPicture, String description, Long price, String currency, String type, String name) {
+    public OrderBean(String pathToPicture, String description, Long price, String currency, String type, String name, String addButtonName, String removeButtonName) {
         this.pathToPicture = pathToPicture;
         this.description = description;
         this.price = price;
         this.currency = currency;
         this.type = type;
         this.name = name;
+        this.addButtonName = addButtonName;
+        this.removeButtonName = removeButtonName;
     }
 
     public String getPathToPicture() {
@@ -63,5 +67,13 @@ public class OrderBean {
 
     public void setName(String name) {
         this.name = name;
+    }
+
+    public String getAddButtonName() {
+        return addButtonName;
+    }
+
+    public String getRemoveButtonName() {
+        return removeButtonName;
     }
 }

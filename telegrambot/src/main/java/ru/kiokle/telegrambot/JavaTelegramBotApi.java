@@ -48,6 +48,7 @@ import static ru.kiokle.telegrambot.enums.Messages.CANCEL_THIS_ORDER;
 import static ru.kiokle.telegrambot.enums.Messages.ORDER;
 import static ru.kiokle.telegrambot.enums.Messages.ORDER_HAS_BEEN_GIVEN;
 import static ru.kiokle.telegrambot.enums.Messages.SHOW_MY_ORDERS;
+import ru.kiokle.telegrambot.logs.LogBean;
 import ru.kiokle.telegrambot.logs.Logs;
 import ru.kiokle.telegrambot.utils.MessageUtils;
 import static ru.kiokle.telegrambot.utils.PriceUtils.getSum;
@@ -69,9 +70,10 @@ public class JavaTelegramBotApi {
     private final String REMOVE_ME_FROM_MASTER_USERS = "убери меня из получателей";
     private static final String THE_ORDER_WAS_GIVEN = "заказ передан ";
     private static final String THE_ORDER_WAS_NOT_GIVEN = "заказ не передан ";
+    private final String SHOW_EVENTS = "покажи события";
 
     public JavaTelegramBotApi() throws IOException {
-        logs = new Logs();
+        logs = new Logs(4096);
         logs.init();
         FileUtils fileUtils = new FileUtils();
         configs = fileUtils.getConfigs();
@@ -163,6 +165,16 @@ public class JavaTelegramBotApi {
                         h2.masterUser(username, true, chatId);
                         masterUsersSet.add(new MasterUserKey(username, chatId));
                         createMessageAnswer(bot, chatId, null, "Пользователь " + username + " был добавлен в качестве получателя сообщений о заказах!");
+                    } else if (update.message() != null && update.message().text() != null && SHOW_EVENTS.equals(update.message().text().toLowerCase())) {
+                        long chatId = update.message().chat().id();
+                        List<String> messages = logs.getExceptionList().stream().map(LogBean::getLog).collect(Collectors.toList());
+                        if (!messages.isEmpty()) {
+                            for (String message : messages) {
+                                createMessageAnswer(bot, chatId, null, message);
+                            }
+                        } else {
+                            createMessageAnswer(bot, chatId, null, "Нет событий!");
+                        }
                     } else if (update.message() != null && update.message().text() != null && REMOVE_ME_FROM_MASTER_USERS.equals(update.message().text().toLowerCase())) {
                         String username = getUsername(update.message().from());
                         long chatId = update.message().chat().id();
@@ -406,7 +418,7 @@ public class JavaTelegramBotApi {
             h2.addUser(username, null, null, chatId);
         }
         for (OrderBean order : configs.getOrders()) {
-            sendPhotoWithButton(bot, chatId, order.getPathToPicture(), order.getDescription() + ", " + order.getPrice() + " " + order.getCurrency(), order.getName());
+            sendPhotoWithButton(bot, chatId, order.getPathToPicture(), order.getDescription() + ", " + order.getPrice() + " " + order.getCurrency(), order.getName(), order.getAddButtonName(), order.getRemoveButtonName());
         }
         sendOrderButton(bot, chatId);
         List<Order> activeOrdersOfTheUser = h2.getActiveOrdersOfTheUser(chatId);
@@ -492,10 +504,10 @@ public class JavaTelegramBotApi {
         bot.execute(sendPhoto);
     }
 
-    private void sendPhotoWithButton(TelegramBot bot, long chatId, String imagePath, String caption, String callbackData) {
+    private void sendPhotoWithButton(TelegramBot bot, long chatId, String imagePath, String caption, String callbackData, String addButtonName, String removeButtonName) {
         InlineKeyboardMarkup markup = new InlineKeyboardMarkup();
-        InlineKeyboardButton button = new InlineKeyboardButton("Заказать").callbackData(new CallbackDataBean(ADD, callbackData, true, chatId).toString());
-        InlineKeyboardButton button2 = new InlineKeyboardButton("Убрать").callbackData(new CallbackDataBean(ADD, callbackData, false, chatId).toString());
+        InlineKeyboardButton button = new InlineKeyboardButton(addButtonName).callbackData(new CallbackDataBean(ADD, callbackData, true, chatId).toString());
+        InlineKeyboardButton button2 = new InlineKeyboardButton(removeButtonName).callbackData(new CallbackDataBean(ADD, callbackData, false, chatId).toString());
         markup.addRow(button, button2);
         SendPhoto sendPhoto = new SendPhoto(chatId, new File(imagePath)).caption(caption).replyMarkup(markup);
         bot.execute(sendPhoto);
