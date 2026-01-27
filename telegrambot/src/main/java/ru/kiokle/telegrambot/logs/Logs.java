@@ -8,6 +8,7 @@ import java.util.Date;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 /**
@@ -36,7 +37,7 @@ public class Logs {
         StringWriter sw = new StringWriter();
         PrintWriter pw = new PrintWriter(sw);
         ex.printStackTrace(pw);
-        List<LogBean> split = Stream.of(sw.toString().split("\n")).map(LogBean::new).toList();
+        List<LogBean> split = Stream.of(sw.toString().split("\n")).map(LogBean::new).collect(Collectors.toList());
         synchronized (exceptionList) {
             exceptionList.addAll(split);
             if (exceptionList.size() > MAX_LOGS_LENGTH) {

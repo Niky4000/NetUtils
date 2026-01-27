@@ -17,8 +17,10 @@ import com.pengrad.telegrambot.request.SendPhoto;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Calendar;
 import java.util.Date;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -318,7 +320,7 @@ public class JavaTelegramBotApi {
         }
     }
 
-    private final Set<Messages> systemCommands = Set.of(ORDER_HAS_BEEN_GIVEN);
+    private final Set<Messages> systemCommands = new HashSet<>(Arrays.asList(ORDER_HAS_BEEN_GIVEN));
 
     private boolean checkForSystemCommands(Update update, Function<String, Messages> getMessage) {
         if (update.callbackQuery() != null && update.callbackQuery().data() != null) {

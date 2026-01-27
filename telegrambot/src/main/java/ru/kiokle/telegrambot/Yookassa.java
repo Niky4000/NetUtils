@@ -46,8 +46,8 @@ public class Yookassa {
         while (true) {
             Socket socket = serverSocket.accept();
             try (InputStream inputStream = socket.getInputStream()) {
-                String string = new String(inputStream.readAllBytes());
-                System.out.println(string);
+//                String string = new String(inputStream.readAllBytes());
+//                System.out.println(string);
             }
         }
     }

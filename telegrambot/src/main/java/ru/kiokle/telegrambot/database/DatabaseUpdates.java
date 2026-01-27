@@ -4,6 +4,7 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
 import ru.kiokle.telegrambot.bean.ConditionalSql;
@@ -14,7 +15,7 @@ public class DatabaseUpdates {
 
     public void update(Connection connection) throws SQLException {
         AtomicLong databaseVersion = new AtomicLong(0L);
-        sql(connection, List.of(
+        sql(connection, Arrays.asList(
                 new ConditionalSql("create table database_version (version long, primary key(version))", () -> {
                     databaseVersion.set(getVersion(connection));
                     return databaseVersion.compareAndSet(-1L, 0L);
