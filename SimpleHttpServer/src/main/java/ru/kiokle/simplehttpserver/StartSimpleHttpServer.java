@@ -25,6 +25,7 @@ import ru.kiokle.simplehttpserver.clients.Md5Client;
 import ru.kiokle.simplehttpserver.clients.PingClient;
 import ru.kiokle.simplehttpserver.clients.SelfPathClient;
 import ru.kiokle.simplehttpserver.clients.StopServerClient;
+import ru.kiokle.simplehttpserver.clients.UploadBigFilesClient;
 import ru.kiokle.simplehttpserver.clients.UploadClient;
 import ru.kiokle.simplehttpserver.clients.enums.ConnectionType;
 import static ru.kiokle.simplehttpserver.clients.enums.ConnectionType.I2P;
@@ -67,7 +68,7 @@ public class StartSimpleHttpServer {
             String client = getConfig("-client", argList);
             String host = getConfig("-host", argList);
             Integer port = Integer.valueOf(getConfig("-port", argList));
-            Integer proxyPort = Integer.valueOf(getConfig("-proxyPort", argList));
+            Integer proxyPort = argList.contains("-proxyPort")?Integer.valueOf(getConfig("-proxyPort", argList)):0;
             boolean localNetwork = argList.contains("-local");
             ConnectionType connectionType = localNetwork ? LOCAL : I2P;
             if (client.equals("ping")) {
@@ -80,6 +81,9 @@ public class StartSimpleHttpServer {
             } else if (client.equals("upload")) {
                 // java -agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=21044 -jar /home/me/GIT/NetUtils/SimpleHttpServer/target/SimpleHttpServer.jar -client upload -host me-virtual2.i2p -port 80 -proxyPort 4444 -file /home/me/GIT/NetUtils/HttpTunnel/target/jutil.jar -toFile D:\\jutil.jar
                 new UploadClient(argList, host, port, proxyPort, connectionType, new File(getConfig("-file", argList)), getConfig("-toFile", argList)).connect();
+            } else if (client.equals("upload2")) {
+                // java -agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=21044 -jar /home/me/GIT/NetUtils/SimpleHttpServer/target/SimpleHttpServer.jar -client upload -host me-virtual2.i2p -port 80 -proxyPort 4444 -file /home/me/GIT/NetUtils/HttpTunnel/target/jutil.jar -toFile D:\\jutil.jar
+                new UploadBigFilesClient(argList, host, port, proxyPort, connectionType, new File(getConfig("-file", argList)), getConfig("-toFile", argList)).connect();
             } else if (client.equals("md5")) {
                 // java -agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=21044 -jar /home/me/GIT/NetUtils/SimpleHttpServer/target/SimpleHttpServer.jar -client md5 -host me-virtual2.i2p -port 80 -proxyPort 4444 -file /home/me/tmp/pollResult4
                 AtomicReference<String> md5Reference = new AtomicReference<>();

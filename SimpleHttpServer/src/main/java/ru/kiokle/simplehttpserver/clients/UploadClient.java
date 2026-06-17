@@ -4,6 +4,8 @@ import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.IOException;
+import java.io.InputStream;
 import java.util.List;
 import static ru.kiokle.simplehttpserver.StartSimpleHttpServer.BUFFER_SIZE;
 import static ru.kiokle.simplehttpserver.StartSimpleHttpServer.delimiter;
@@ -17,8 +19,8 @@ import ru.kiokle.simplehttpserver.log.Logger;
 
 public class UploadClient extends Client {
 
-    private final File file;
-    private final String toFile;
+    protected final File file;
+    protected final String toFile;
 
     public UploadClient(List<String> argList, String destinationHost, int destinationPort, int proxyPort, ConnectionType connectionType, File file, String toFile) {
         super(argList, destinationHost, destinationPort, proxyPort, connectionType);
@@ -32,22 +34,25 @@ public class UploadClient extends Client {
 
     @Override
     public void handle(BufferedOutputStream outputStream, BufferedInputStream inputStream) throws Exception {
-        try (FileInputStream fileInputStream = new FileInputStream(file)) {
-            outputStream.write(makeHeadBytes(() -> createHead(toFile, file.length())));
-            outputStream.write(endOfStream);
-            for (int i = 0; i < getIterationCount(file); i++) {
-                byte[] buffer = new byte[BUFFER_SIZE];
-                fileInputStream.read(buffer);
-                outputStream.write(buffer);
-            }
-            outputStream.flush();
+        try (InputStream fileInputStream = new FileInputStream(file)) {
+            sendFile(outputStream, inputStream, fileInputStream, file.length(), toFile);
         }
+    }
+
+    protected void sendFile(BufferedOutputStream outputStream, BufferedInputStream inputStream, InputStream fileInputStream, long fileLength, String toFile) throws IOException {
+        outputStream.write(makeHeadBytes(() -> createHead(toFile, fileLength)));
+        outputStream.write(endOfStream);
+        for (int i = 0; i < getIterationCount(fileLength); i++) {
+            byte[] buffer = new byte[BUFFER_SIZE];
+            fileInputStream.read(buffer);
+            outputStream.write(buffer);
+        }
+        outputStream.flush();
         String readInputStream = readInputStream(inputStream);
         Logger.log(readInputStream);
     }
 
-    private int getIterationCount(File file) {
-        long fileLength = file.length();
+    private int getIterationCount(long fileLength) {
         if (fileLength < BUFFER_SIZE) {
             return 1;
         } else if (fileLength % BUFFER_SIZE != 0) {
