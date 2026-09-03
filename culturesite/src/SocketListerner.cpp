@@ -4,7 +4,7 @@
 #ifdef _WIN32
 #include <iostream>
 #include <winsock2.h>
-#pragma comment(lib, "ws2_32.lib") // Link with Winsock library
+//#pragma comment(lib, "ws2_32.lib") // Link with Winsock library
 #else
 #include <iostream>
 #include <sys/socket.h>
