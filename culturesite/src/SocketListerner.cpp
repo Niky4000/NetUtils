@@ -1,12 +1,12 @@
 //
 // Created by me on 02/09/2026.
 //
-#ifdef _WIN32
+#include <cstring>
 #include <iostream>
+#ifdef _WIN32
 #include <winsock2.h>
 //#pragma comment(lib, "ws2_32.lib") // Link with Winsock library
 #else
-#include <iostream>
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <unistd.h>
@@ -88,9 +88,41 @@ private:
             std::cerr << "Accept failed" << std::endl;
         } else {
             std::cout << "Client connected successfully!" << std::endl;
+
+
+            // 4. Accept a connection
+            // sockaddr_in client_address{};
+            // socklen_t client_len = sizeof(client_address);
+            //
+            // int client_fd = accept(
+            //     server_fd,
+            //     (struct sockaddr*)&client_address,
+            //     &client_len
+            // );
+            //
+            // if (client_fd < 0) {
+            //     std::cerr << "Accept failed" << std::endl;
+            // } else {
+            //     std::cout << "Client connected successfully!" << std::endl;
+
+                // Buffer for incoming data
+                char buffer[1024];
+                ssize_t bytes_received = recv(client_fd,buffer,sizeof(buffer) - 1, 0);
+                if (bytes_received > 0) {
+                    buffer[bytes_received] = '\0';
+                    std::cout << "Received: " << buffer << std::endl;
+                    // Send response
+                    const char* response = "Hello from server!";
+                    send(client_fd,response, strlen(response),0);
+                } else if (bytes_received == 0) {
+                    std::cout << "Client disconnected" << std::endl;
+                } else {
+                    std::cerr << "recv() failed" << std::endl;
+                }
+            // }
+
             close(client_fd); // Close client connection
         }
-
 
         close(server_fd); // Close listening socket
         return 0;
