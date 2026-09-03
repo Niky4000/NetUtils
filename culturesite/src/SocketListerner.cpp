@@ -1,14 +1,54 @@
 //
 // Created by me on 02/09/2026.
 //
-
+#ifdef _WIN32
+#include <iostream>
+#include <winsock2.h>
+#pragma comment(lib, "ws2_32.lib") // Link with Winsock library
+#else
 #include <iostream>
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <unistd.h>
+#endif
 
 class SocketListerner {
 private:
+#ifdef _WIN32
+    int startListen() {
+        // Initialize Winsock
+        WSADATA wsaData;
+        if (WSAStartup(MAKEWORD(2, 2), &wsaData) != 0) {
+            std::cerr << "Winsock initialization failed" << std::endl;
+            return 1;
+        }
+
+        // Create Socket
+        SOCKET server_fd = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
+
+        // Bind ... (Identical layout to POSIX code above)
+        sockaddr_in address{};
+        address.sin_family = AF_INET;
+        address.sin_addr.s_addr = INADDR_ANY;
+        address.sin_port = htons(8080);
+        bind(server_fd, (struct sockaddr *) &address, sizeof(address));
+
+        // Listen
+        if (listen(server_fd, SOMAXCONN) == SOCKET_ERROR) {
+            std::cerr << "Listen failed with error: " << WSAGetLastError() << std::endl;
+            closesocket(server_fd);
+            WSACleanup();
+            return 1;
+        }
+
+        std::cout << "Windows Server listening on port 8080..." << std::endl;
+
+        // Clean up
+        closesocket(server_fd);
+        WSACleanup();
+        return 0;
+    }
+#else
     int startListen() {
         // 1. Create the socket (IPv4, TCP)
         int server_fd = socket(AF_INET, SOCK_STREAM, 0);
@@ -51,9 +91,11 @@ private:
             close(client_fd); // Close client connection
         }
 
+
         close(server_fd); // Close listening socket
         return 0;
     }
+#endif
 
 public:
     SocketListerner();
