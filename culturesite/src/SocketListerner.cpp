@@ -11,66 +11,94 @@
 #include <unistd.h>
 #endif
 
+#ifdef _WIN32
+using Socket = SOCKET;
+#else
+using Socket = int;
+#endif
+
 class SocketListerner {
 private:
-    void answer(int client_fd) {
+    void answer(Socket client_fd) {
+#ifdef _WIN32
+        if (client_fd == INVALID_SOCKET) {
+            std::cerr << "Accept failed: " << WSAGetLastError() << std::endl;
+            return;
+        }
+#else
         if (client_fd < 0) {
             std::cerr << "Accept failed" << std::endl;
-        } else {
-            std::cout << "Client connected successfully!" << std::endl;
-            // Buffer for incoming data
-            char buffer[1024];
-            ssize_t bytes_received = recv(client_fd, buffer, sizeof(buffer) - 1, 0);
-            if (bytes_received > 0) {
-                buffer[bytes_received] = '\0';
-                std::cout << "Received: " << buffer << std::endl;
-                // Send response
-                const char *response = "Hello from server!";
-                send(client_fd, response, strlen(response), 0);
-            } else if (bytes_received == 0) {
-                std::cout << "Client disconnected" << std::endl;
-            } else {
-                std::cerr << "recv() failed" << std::endl;
-            }
-            close(client_fd); // Close client connection
+            return;
         }
+#endif
+        std::cout << "Client connected successfully!" << std::endl;
+        char buffer[1024];
+#ifdef _WIN32
+        int bytes_received = recv(client_fd, buffer, sizeof(buffer) - 1, 0);
+#else
+        ssize_t bytes_received = recv(client_fd, buffer, sizeof(buffer) - 1, 0);
+#endif
+        if (bytes_received > 0) {
+            buffer[bytes_received] = '\0';
+            std::cout << "Received: " << buffer << std::endl;
+            const char *response = "Hello from server!";
+            send(client_fd, response, static_cast<int>(strlen(response)), 0);
+        } else if (bytes_received == 0) {
+            std::cout << "Client disconnected" << std::endl;
+        } else {
+#ifdef _WIN32
+            std::cerr << "recv() failed: " << WSAGetLastError() << std::endl;
+#else
+            std::cerr << "recv() failed" << std::endl;
+#endif
+        }
+#ifdef _WIN32
+        closesocket(client_fd);
+#else
+        close(client_fd);
+#endif
     }
-
 
 #ifdef _WIN32
     int startListen() {
-        // Initialize Winsock
         WSADATA wsaData;
         if (WSAStartup(MAKEWORD(2, 2), &wsaData) != 0) {
-            std::cerr << "Winsock initialization failed" << std::endl;
+            std::cerr << "WSAStartup failed" << std::endl;
             return 1;
         }
-
-        // Create Socket
-        SOCKET server_fd = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
-
-        // Bind ... (Identical layout to POSIX code above)
+        Socket server_fd = socket(AF_INET,SOCK_STREAM, IPPROTO_TCP);
+        if (server_fd == INVALID_SOCKET) {
+            std::cerr << "socket() failed: " << WSAGetLastError() << std::endl;
+            WSACleanup();
+            return 1;
+        }
         sockaddr_in address{};
         address.sin_family = AF_INET;
         address.sin_addr.s_addr = INADDR_ANY;
         address.sin_port = htons(8080);
-        bind(server_fd, (struct sockaddr *) &address, sizeof(address));
-
-        // Listen
-        if (listen(server_fd, SOMAXCONN) == SOCKET_ERROR) {
-            std::cerr << "Listen failed with error: " << WSAGetLastError() << std::endl;
+        if (bind(server_fd, reinterpret_cast<sockaddr *>(&address), sizeof(address)) == SOCKET_ERROR) {
+            std::cerr << "bind() failed: " << WSAGetLastError() << std::endl;
             closesocket(server_fd);
             WSACleanup();
             return 1;
         }
-
-        std::cout << "Windows Server listening on port 8080..." << std::endl;
-
-        // Clean up
-        closesocket(server_fd);
-        WSACleanup();
+        if (listen(server_fd, SOMAXCONN) == SOCKET_ERROR) {
+            std::cerr << "listen() failed: " << WSAGetLastError() << std::endl;
+            closesocket(server_fd);
+            WSACleanup();
+            return 1;
+        }
+        std::cout << "Server is listening on port 8080..." << std::endl;
+        while (true) {
+            sockaddr_in client_address{};
+            int client_len = sizeof(client_address);
+            Socket client_fd = accept(server_fd, reinterpret_cast<sockaddr *>(&client_address), &client_len);
+            answer(client_fd);
+        }
         return 0;
     }
+
+
 #else
     int startListen() {
         // 1. Create the socket (IPv4, TCP)
@@ -114,6 +142,30 @@ private:
         close(server_fd); // Close listening socket
         return 0;
     }
+
+    // void answer(int client_fd) {
+    //     if (client_fd < 0) {
+    //         std::cerr << "Accept failed" << std::endl;
+    //     } else {
+    //         std::cout << "Client connected successfully!" << std::endl;
+    //         // Buffer for incoming data
+    //         char buffer[1024];
+    //         ssize_t bytes_received = recv(client_fd, buffer, sizeof(buffer) - 1, 0);
+    //         if (bytes_received > 0) {
+    //             buffer[bytes_received] = '\0';
+    //             std::cout << "Received: " << buffer << std::endl;
+    //             // Send response
+    //             const char *response = "Hello from server!";
+    //             send(client_fd, response, strlen(response), 0);
+    //         } else if (bytes_received == 0) {
+    //             std::cout << "Client disconnected" << std::endl;
+    //         } else {
+    //             std::cerr << "recv() failed" << std::endl;
+    //         }
+    //         close(client_fd); // Close client connection
+    //     }
+    // }
+
 #endif
 
 public:
