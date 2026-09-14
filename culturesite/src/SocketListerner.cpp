@@ -7,6 +7,7 @@
 #include <winsock2.h>
 #else
 #include <sys/socket.h>
+#include <sstream>
 #include <netinet/in.h>
 #include <unistd.h>
 #endif
@@ -19,6 +20,19 @@ using Socket = int;
 
 class SocketListerner {
 private:
+
+    std::string createResponse() {
+        std::string data = "<html><head><title>My Server</title></head><body><h1>Hello, World!</h1></body></html>";
+        std::stringstream ss;
+        ss << "HTTP/1.1 200\n"
+           << "content-length: " << data.length() << "\n"
+           << "cache-control: no-cache\n"
+           << "content-type: text/html\n"
+           << "connection: close\n\n";
+        ss << data;
+        return ss.str();
+    }
+
     void answer(Socket client_fd) {
 #ifdef _WIN32
         if (client_fd == INVALID_SOCKET) {
@@ -41,8 +55,8 @@ private:
         if (bytes_received > 0) {
             buffer[bytes_received] = '\0';
             std::cout << "Received: " << buffer << std::endl;
-            const char *response = "Hello from server!";
-            send(client_fd, response, static_cast<int>(strlen(response)), 0);
+            std::string response = createResponse();
+            send(client_fd, response.c_str(), static_cast<int>(strlen(response.c_str())), 0);
         } else if (bytes_received == 0) {
             std::cout << "Client disconnected" << std::endl;
         } else {
