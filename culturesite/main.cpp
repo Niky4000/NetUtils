@@ -1,7 +1,7 @@
 #include <iostream>
 #include <memory>
 
-#include "src/SocketListerner.cpp"
+#include "src/Page.cpp"
 // TIP To <b>Run</b> code, press <shortcut actionId="Run"/> or click the <icon src="AllIcons.Actions.Execute"/> icon in the gutter.
 
 int main() {
@@ -10,7 +10,7 @@ int main() {
     const auto lang = "C++";
     std::cout << "Hello and welcome to " << lang << "!\n";
 
-    auto socketListerner = std::make_unique<SocketListerner>();
+    auto socketListerner = std::make_unique<Page>();
     socketListerner->listenForConnections();
     // SocketListerner *s = new SocketListerner();
 
