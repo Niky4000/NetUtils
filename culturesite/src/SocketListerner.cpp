@@ -5,6 +5,7 @@
 #include <cstring>
 #include <iostream>
 #include <ranges>
+#include <thread>
 #ifdef _WIN32
 #include <winsock2.h>
 #else
@@ -14,6 +15,8 @@
 #include <unistd.h>
 #endif
 #include <filesystem>
+#include "FileUtils.cpp"
+#include <unordered_set>
 
 #ifdef _WIN32
 using Socket = SOCKET;
@@ -23,7 +26,9 @@ using Socket = int;
 
 class SocketListerner {
 protected:
-    virtual std::string createResponse(std::string request) {
+    FileUtils *fileUtils = new FileUtils();
+
+    virtual std::vector<char> createResponse(std::string request) {
         std::string data = "<html><head><title>My Server</title></head><body><h1>Hello, World!</h1></body></html>";
         std::stringstream ss;
         ss << "HTTP/1.1 200\n"
@@ -32,7 +37,38 @@ protected:
                 << "content-type: text/html\n"
                 << "connection: close\n\n";
         ss << data;
-        return ss.str();
+        return strToCharVector(ss.str());
+    }
+
+    std::vector<char> strToCharVector(std::string str) {
+        const char *source = str.c_str();
+        size_t length = std::strlen(source);
+        std::vector<char> ret(source, source + length);
+        return ret;
+    }
+
+    std::string replaceAll(std::string str, const std::string &from, const std::string &to) {
+        size_t pos = 0;
+        while ((pos = str.find(from, pos)) != std::string::npos) {
+            str.replace(pos, from.length(), to);
+            pos += to.length(); // Advance past the replaced part
+        }
+        return str;
+    }
+
+    void replaceAll(std::vector<char> &vec, const std::vector<char> &from, const std::vector<char> &to) {
+        if (from.empty()) return;
+        // 1. Find the substring in the vector
+        auto it = std::search(vec.begin(), vec.end(), from.begin(), from.end());
+        // 2. If found, replace it
+        while (it != vec.end()) {
+            size_t index = std::distance(vec.begin(), it);
+            // Erase the old substring
+            it = vec.erase(it, it + from.size());
+            // Insert the new substring
+            vec.insert(it, to.begin(), to.end());
+            it = std::search(vec.begin(), vec.end(), from.begin(), from.end());
+        }
     }
 
     int getClosestIndex(std::string str) {
@@ -55,19 +91,19 @@ protected:
             int index2 = name.find("?", index);
             int index3 = name.find("\n");
             std::string substring = name.substr(index + 1, min({index2, index3}) - (index + 1));
-            if (substring.compare("css")) {
+            if (substring.compare("css") == 0) {
                 return "text/css";
-            } else if (substring.compare("js")) {
+            } else if (substring.compare("js") == 0) {
                 return "text/javascript";
-            } else if (substring.compare("png")) {
+            } else if (substring.compare("png") == 0) {
                 return "image/png";
-            } else if (substring.compare("jpeg")) {
+            } else if (substring.compare("jpeg") == 0) {
                 return "image/jpeg";
-            } else if (substring.compare("jpg")) {
+            } else if (substring.compare("jpg") == 0) {
                 return "image/jpeg";
-            } else if (substring.compare("svg")) {
+            } else if (substring.compare("svg") == 0) {
                 return "image/svg+xml";
-            } else if (substring.compare("ico")) {
+            } else if (substring.compare("ico") == 0) {
                 return "image/x-icon";
             } else {
                 return "text/html";
@@ -112,18 +148,40 @@ protected:
         }
     }
 
+    std::unordered_set<std::string> requests = {"GET"};
+
+    void getRequest(std::string request) {
+        for (auto requestHead: requests) {
+            if (request.contains(requestHead)) {
+                int startIndex = request.find("GET") + requestHead.length();
+                int endIndex = request.find(" ", startIndex + 1);
+                int endIndex2 = request.find("&", startIndex + 1);
+                int endIndex3 = request.find("\n", startIndex + 1);
+                int indexTo = min({endIndex, endIndex2, endIndex3});
+                if (indexTo - startIndex > 0) {
+                    std::string requestPath = request.substr(startIndex + 1, indexTo - startIndex);
+                    std::cout << requestPath << std::endl;
+                }
+            }
+        }
+    }
+
 private:
-    std::string basePath = std::filesystem::current_path().string();
-    // std::string basePath = "/home/me/Булки/duslyk/bread63"; // Взять это из настроек!
+    // std::string basePath = std::filesystem::current_path().string();
+    std::string basePath = formatBasePath(fileUtils->getConfig("base")); // Взять это из настроек!
     std::string endStr = "\n";
     std::string backVariableName = "back=";
+
+    std::string formatBasePath(std::string basePath) {
+        std::string lastSymbol = basePath.substr(basePath.length() - 1, basePath.length());
+        return lastSymbol == "/" ? basePath.substr(0, basePath.length() - 1) : basePath;
+    }
 
     bool isParentDir(std::string request) {
         return request.substr(0, request.find(endStr)).contains(backVariableName);
     }
 
     std::string handle(std::string str) {
-        std::cout << ("path = " + str);
         std::filesystem::path d = std::filesystem::path{basePath + str};
         return std::filesystem::is_directory(d) ? basePath + str + "index.html" : basePath + str;
     }
@@ -140,55 +198,6 @@ private:
         return *it;
     }
 
-    std::string replaceAll(std::string str, const std::string &from, const std::string &to) {
-        size_t pos = 0;
-        while ((pos = str.find(from, pos)) != std::string::npos) {
-            str.replace(pos, from.length(), to);
-            pos += to.length(); // Advance past the replaced part
-        }
-        return str;
-    }
-
-    //     void answer_old(Socket client_fd) {
-    // #ifdef _WIN32
-    //         if (client_fd == INVALID_SOCKET) {
-    //             std::cerr << "Accept failed: " << WSAGetLastError() << std::endl;
-    //             return;
-    //         }
-    // #else
-    //         if (client_fd < 0) {
-    //             std::cerr << "Accept failed" << std::endl;
-    //             return;
-    //         }
-    // #endif
-    //         std::cout << "Client connected successfully!" << std::endl;
-    //         char buffer[1024];
-    // #ifdef _WIN32
-    //         int bytes_received = recv(client_fd, buffer, sizeof(buffer) - 1, 0);
-    // #else
-    //         ssize_t bytes_received = recv(client_fd, buffer, sizeof(buffer) - 1, 0);
-    // #endif
-    //         if (bytes_received > 0) {
-    //             buffer[bytes_received] = '\0';
-    //             std::string response = createResponse();
-    //             send(client_fd, response.c_str(), static_cast<int>(strlen(response.c_str())), 0);
-    //             std::cout << "Received: " << buffer << std::endl;
-    //         } else if (bytes_received == 0) {
-    //             std::cout << "Client disconnected" << std::endl;
-    //         } else {
-    // #ifdef _WIN32
-    //             std::cerr << "recv() failed: " << WSAGetLastError() << std::endl;
-    // #else
-    //             std::cerr << "recv() failed" << std::endl;
-    // #endif
-    //         }
-    // #ifdef _WIN32
-    //         closesocket(client_fd);
-    // #else
-    //         close(client_fd);
-    // #endif
-    //     }
-
     void answer(Socket client_fd) {
 #ifdef _WIN32
         if (client_fd == INVALID_SOCKET) {
@@ -201,7 +210,6 @@ private:
             return;
         }
 #endif
-        std::cout << "Client connected successfully!" << std::endl;
         std::string request;
         char buffer[1024];
         while (true) {
@@ -212,12 +220,10 @@ private:
 #endif
             if (bytes_received > 0) {
                 request.append(buffer, bytes_received);
-                // HTTP headers are finished
                 if (request.find("\r\n\r\n") != std::string::npos) {
                     break;
                 }
             } else if (bytes_received == 0) {
-                std::cout << "Client disconnected" << std::endl;
                 break;
             } else {
 #ifdef _WIN32
@@ -229,9 +235,9 @@ private:
             }
         }
         // Create HTTP response
-        std::string response = createResponse(request);
-        send(client_fd, response.c_str(), static_cast<int>(response.size()), 0);
-        std::cout << "HTTP request:\n" << request << std::endl;
+        std::vector<char> response = createResponse(request);
+        send(client_fd, response.data(), static_cast<int>(response.size()), 0);
+        // std::cout << "HTTP request:\n" << request << std::endl;
 #ifdef _WIN32
         closesocket(client_fd);
 #else
@@ -240,7 +246,7 @@ private:
     }
 
 #ifdef _WIN32
-    int startListen() {
+    int startListen(int port) {
         WSADATA wsaData;
         if (WSAStartup(MAKEWORD(2, 2), &wsaData) != 0) {
             std::cerr << "WSAStartup failed" << std::endl;
@@ -255,7 +261,7 @@ private:
         sockaddr_in address{};
         address.sin_family = AF_INET;
         address.sin_addr.s_addr = INADDR_ANY;
-        address.sin_port = htons(8080);
+        address.sin_port = htons(port);
         if (bind(server_fd, reinterpret_cast<sockaddr *>(&address), sizeof(address)) == SOCKET_ERROR) {
             std::cerr << "bind() failed: " << WSAGetLastError() << std::endl;
             closesocket(server_fd);
@@ -268,19 +274,20 @@ private:
             WSACleanup();
             return 1;
         }
-        std::cout << "Server is listening on port 8080..." << std::endl;
+        // std::cout << "Server is successfully listening on port " << port << "..." << std::endl;
         while (true) {
             sockaddr_in client_address{};
             int client_len = sizeof(client_address);
             Socket client_fd = accept(server_fd, reinterpret_cast<sockaddr *>(&client_address), &client_len);
-            answer(client_fd);
+            std::thread sendingThread([&]() { answer(client_fd); });
+            sendingThread.detach();
         }
         return 0;
     }
 
 
 #else
-    int startListen() {
+    int startListen(int port) {
         // 1. Create the socket (IPv4, TCP)
         int server_fd = socket(AF_INET, SOCK_STREAM, 0);
         if (server_fd < 0) {
@@ -301,7 +308,7 @@ private:
         sockaddr_in address{};
         address.sin_family = AF_INET;
         address.sin_addr.s_addr = INADDR_ANY; // Listen on all available interfaces
-        address.sin_port = htons(8080); // Listen on port 8080
+        address.sin_port = htons(port); // Listen on port 8080
 
         if (bind(server_fd, (struct sockaddr *) &address, sizeof(address)) < 0) {
             std::cerr << "Bind failed. errno = " << errno << ", message = " << std::strerror(errno) << std::endl;
@@ -317,7 +324,7 @@ private:
             return 1;
         }
 
-        std::cout << "Server is successfully listening on port 8080..." << std::endl;
+        // std::cout << "Server is successfully listening on port " << port << "..." << std::endl;
 
         // 4. Accept a connection (blocks until a client connects)
         sockaddr_in client_address{};
@@ -325,35 +332,13 @@ private:
 
         while (true) {
             int client_fd = accept(server_fd, (struct sockaddr *) &client_address, &client_len);
-            answer(client_fd);
+            std::thread sendingThread([&]() { answer(client_fd); });
+            sendingThread.detach();
         }
 
         close(server_fd); // Close listening socket
         return 0;
     }
-
-    // void answer(int client_fd) {
-    //     if (client_fd < 0) {
-    //         std::cerr << "Accept failed" << std::endl;
-    //     } else {
-    //         std::cout << "Client connected successfully!" << std::endl;
-    //         // Buffer for incoming data
-    //         char buffer[1024];
-    //         ssize_t bytes_received = recv(client_fd, buffer, sizeof(buffer) - 1, 0);
-    //         if (bytes_received > 0) {
-    //             buffer[bytes_received] = '\0';
-    //             std::cout << "Received: " << buffer << std::endl;
-    //             // Send response
-    //             const char *response = "Hello from server!";
-    //             send(client_fd, response, strlen(response), 0);
-    //         } else if (bytes_received == 0) {
-    //             std::cout << "Client disconnected" << std::endl;
-    //         } else {
-    //             std::cerr << "recv() failed" << std::endl;
-    //         }
-    //         close(client_fd); // Close client connection
-    //     }
-    // }
 
 #endif
 
@@ -362,14 +347,16 @@ public:
 
     ~SocketListerner();
 
-    void listenForConnections() {
-        startListen();
-        std::cout << "Listening for connections..." << std::endl;
+    void listenForConnections(int port) {
+        startListen(port);
+        // std::cout << "Listening for connections..." << std::endl;
     }
 };
 
 SocketListerner::SocketListerner() {
+    std::cout << "basePath: " << basePath << std::endl;
 }
 
 SocketListerner::~SocketListerner() {
+    delete fileUtils;
 }

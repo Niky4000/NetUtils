@@ -2,52 +2,60 @@
 // Created by me on 14/09/2026.
 //
 #include "SocketListerner.cpp"
-#include <sstream>
-#include <fstream>
 
 class Page : public SocketListerner {
 protected:
-    std::string createResponse(std::string request) override {
+    std::vector<char> createResponse(std::string request) override {
         std::filesystem::path baseDir = getPathFromRequest(request, "GET ");
+        getRequest(request);
         std::string type = getType(baseDir);
-        std::string data = readFile(baseDir);
-        // byte[] content = handle(FileUtils.readAllBytesFromFile(baseDir), type);
-        // std::string data = "<html><head><title>My Server</title></head><body><h1>Hello, World!!!</h1><h2>Hello!!!</h2></body></html>";
+        std::vector<char> data;
+        try {
+            data = fileUtils->readAllChars(baseDir);
+            handle(data, type);
+        } catch (std::exception &e) {
+            std::string s = "<html><head><title>My Server</title></head><body><h1>404</h1></body></html>";
+            data = strToCharVector(s);
+        }
         std::stringstream ss;
         ss << "HTTP/1.1 200\n"
-                << "content-length: " << data.length() << "\n"
+                << "content-length: " << data.size() << "\n"
                 << "cache-control: no-cache\n"
-                << "content-type: text/html\n"
+                << "content-type: " << type << " text/html; charset=utf-8\n"
                 << "connection: close\n\n";
-        ss << data;
-        return ss.str();
+        std::string header = ss.str();
+        data.insert(data.begin(), header.begin(), header.end());
+        return data;
     }
 
 private:
-    std::string readFile(const std::string &filepath) {
-        std::filesystem::path currentFile = std::filesystem::path{filepath};
-        if (is_directory(currentFile) || !exists(currentFile)) {
-            return "";
+    void handle(std::vector<char> &content, std::string type) {
+        if (type.compare("text/html") == 0) {
+            for (const auto [key,name]: fileUtils->getEnvMap()) {
+                replaceAll(content, strToCharVector(key), strToCharVector(name));
+            }
+            // removeComments(string).getBytes();
+        } else {
         }
-        std::ifstream file(filepath, std::ios::binary); // Binary mode preserves exact size
-        if (!file.is_open()) return "";
-
-        // Determine file size and pre-allocate string memory
-        auto size = std::filesystem::file_size(filepath);
-        std::string content(size, '\0');
-
-        // Read directly into the contiguous string memory block
-        file.read(&content[0], size);
-        return content;
     }
 
 public:
+    void debug() {
+        // std::vector<char> response = createResponse("GET / HTTP/1.1");
+        std::string s =
+                "href=${site_base}/feed/ href=${site_base}/feed/  href=${site_base}/feed/  href=${site_base}/feed/  href=${site_base}/feed/  href=${site_base}/feed/  href=${site_base}/feed/  href=${site_base}/feed/ ";
+        std::vector<char> response = strToCharVector(s);
+        handle(response, "text/html");
+        std::string str(response.begin(), response.end());
+        std::cout << str << std::endl;
+    }
+
     Page();
 
     ~Page();
 };
 
-Page::Page() {
+Page::Page() : SocketListerner() {
 }
 
 Page::~Page() {
