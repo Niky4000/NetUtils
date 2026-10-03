@@ -21,7 +21,7 @@ protected:
         ss << "HTTP/1.1 200\n"
                 << "content-length: " << data.size() << "\n"
                 << "cache-control: no-cache\n"
-                << "content-type: " << type << " text/html; charset=utf-8\n"
+                << "content-type: " << type << "\n"
                 << "connection: close\n\n";
         std::string header = ss.str();
         data.insert(data.begin(), header.begin(), header.end());
@@ -30,7 +30,7 @@ protected:
 
 private:
     void handle(std::vector<char> &content, std::string type) {
-        if (type.compare("text/html") == 0) {
+        if (type.compare("text/html; charset=utf-8") == 0) {
             for (const auto [key,name]: fileUtils->getEnvMap()) {
                 replaceAll(content, strToCharVector(key), strToCharVector(name));
             }

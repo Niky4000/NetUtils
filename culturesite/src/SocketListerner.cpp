@@ -97,9 +97,9 @@ protected:
             int index3 = name.find("\n");
             std::string substring = name.substr(index + 1, min({index2, index3}) - (index + 1));
             if (substring.compare("css") == 0) {
-                return "text/css";
+                return "text/css; charset=utf-8";
             } else if (substring.compare("js") == 0) {
-                return "text/javascript";
+                return "text/javascript; charset=utf-8";
             } else if (substring.compare("png") == 0) {
                 return "image/png";
             } else if (substring.compare("jpeg") == 0) {
@@ -112,8 +112,8 @@ protected:
                 return "image/x-icon";
             } else if (substring.compare("pdf") == 0) {
                 return "application/pdf";
-            }  else {
-                return "text/html";
+            } else {
+                return "text/html; charset=utf-8";
             }
         } catch (std::exception e) {
             // e.printStackTrace();
@@ -167,7 +167,7 @@ protected:
                 int indexTo = min({endIndex, endIndex2, endIndex3});
                 if (indexTo - startIndex > 0) {
                     std::string requestPath = request.substr(startIndex + 1, indexTo - startIndex);
-                    std::cout << requestPath << std::endl;
+                    // std::cout << requestPath << std::endl;
                 }
             }
         }
@@ -610,7 +610,7 @@ private:
                     // Защищаем поток от падения, если в вашей логике ответа возникнет C++ exception
                     try {
                         answerSsl(ssl, client_fd);
-                    } catch (const std::exception& e) {
+                    } catch (const std::exception &e) {
                         std::cerr << "Exception in answerSsl: " << e.what() << std::endl;
                     } catch (...) {
                         std::cerr << "Unknown exception in answerSsl" << std::endl;
@@ -632,8 +632,8 @@ private:
     }
 
 
-// 2. Основной метод прослушивания
-int startListenSsl(int port) {
+    // 2. Основной метод прослушивания
+    int startListenSsl(int port) {
 #ifndef _WIN32
         // Игнорируем сигнал SIGPIPE, чтобы операционная система не убивала приложение
         // при внезапном отключении клиентов (браузеров)
@@ -646,126 +646,126 @@ int startListenSsl(int port) {
             return 1;
         }
 #endif
-    SSL_CTX *ctx = create_ssl_context();
-    if (!ctx) {
-        return 1;
-    }
-
-    int server_fd = socket(AF_INET, SOCK_STREAM, 0);
-    if (server_fd < 0) {
-        std::cerr << "Socket creation failed" << std::endl;
-        SSL_CTX_free(ctx);
-        return 1;
-    }
-
-    int opt = 1;
-    if (setsockopt(server_fd, SOL_SOCKET, SO_REUSEADDR, (const char*)&opt, sizeof(opt)) < 0) {
-        std::cerr << "setsockopt failed" << std::endl;
-#ifdef _WIN32
-        closesocket(server_fd);
-#else
-        close(server_fd);
-#endif
-        SSL_CTX_free(ctx);
-        return 1;
-    }
-
-    sockaddr_in address{};
-    address.sin_family = AF_INET;
-    address.sin_addr.s_addr = INADDR_ANY;
-    address.sin_port = htons(port);
-
-    if (bind(server_fd, (struct sockaddr *) &address, sizeof(address)) < 0) {
-        std::cerr << "Bind failed. errno = " << errno << std::endl;
-#ifdef _WIN32
-        closesocket(server_fd);
-#else
-        close(server_fd);
-#endif
-        SSL_CTX_free(ctx);
-        return 1;
-    }
-
-    if (listen(server_fd, SOMAXCONN) < 0) {
-        std::cerr << "Listen failed" << std::endl;
-#ifdef _WIN32
-        closesocket(server_fd);
-#else
-        close(server_fd);
-#endif
-        SSL_CTX_free(ctx);
-        return 1;
-    }
-
-    sockaddr_in client_address{};
-    socklen_t client_len = sizeof(client_address);
-
-    while (true) {
-        int client_fd = accept(server_fd, (struct sockaddr *) &client_address, &client_len);
-#ifdef _WIN32
-        if (client_fd == INVALID_SOCKET) {
-            std::cerr << "Accept failed" << std::endl;
-            continue;
+        SSL_CTX *ctx = create_ssl_context();
+        if (!ctx) {
+            return 1;
         }
-#else
-        if (client_fd < 0) {
-            std::cerr << "Accept failed" << std::endl;
-            continue;
+
+        int server_fd = socket(AF_INET, SOCK_STREAM, 0);
+        if (server_fd < 0) {
+            std::cerr << "Socket creation failed" << std::endl;
+            SSL_CTX_free(ctx);
+            return 1;
         }
+
+        int opt = 1;
+        if (setsockopt(server_fd, SOL_SOCKET, SO_REUSEADDR, (const char *) &opt, sizeof(opt)) < 0) {
+            std::cerr << "setsockopt failed" << std::endl;
+#ifdef _WIN32
+            closesocket(server_fd);
+#else
+            close(server_fd);
+#endif
+            SSL_CTX_free(ctx);
+            return 1;
+        }
+
+        sockaddr_in address{};
+        address.sin_family = AF_INET;
+        address.sin_addr.s_addr = INADDR_ANY;
+        address.sin_port = htons(port);
+
+        if (bind(server_fd, (struct sockaddr *) &address, sizeof(address)) < 0) {
+            std::cerr << "Bind failed. errno = " << errno << std::endl;
+#ifdef _WIN32
+            closesocket(server_fd);
+#else
+            close(server_fd);
+#endif
+            SSL_CTX_free(ctx);
+            return 1;
+        }
+
+        if (listen(server_fd, SOMAXCONN) < 0) {
+            std::cerr << "Listen failed" << std::endl;
+#ifdef _WIN32
+            closesocket(server_fd);
+#else
+            close(server_fd);
+#endif
+            SSL_CTX_free(ctx);
+            return 1;
+        }
+
+        sockaddr_in client_address{};
+        socklen_t client_len = sizeof(client_address);
+
+        while (true) {
+            int client_fd = accept(server_fd, (struct sockaddr *) &client_address, &client_len);
+#ifdef _WIN32
+            if (client_fd == INVALID_SOCKET) {
+                std::cerr << "Accept failed" << std::endl;
+                continue;
+            }
+#else
+            if (client_fd < 0) {
+                std::cerr << "Accept failed" << std::endl;
+                continue;
+            }
 #endif
 
-        // Поток полностью контролирует жизненный цикл соединения
-        std::thread sendingThread([client_fd, ctx, this]() {
-            SSL *ssl = SSL_new(ctx);
-            if (!ssl) {
-                std::cerr << "Failed to create SSL structure" << std::endl;
+            // Поток полностью контролирует жизненный цикл соединения
+            std::thread sendingThread([client_fd, ctx, this]() {
+                SSL *ssl = SSL_new(ctx);
+                if (!ssl) {
+                    std::cerr << "Failed to create SSL structure" << std::endl;
+#ifdef _WIN32
+                    closesocket(client_fd);
+#endif
+                    return;
+                }
+
+                SSL_set_fd(ssl, client_fd);
+
+                // ШАГ 1: Заставляем OpenSSL использовать флаг MSG_NOSIGNAL при вызовах send/recv в Linux
+                BIO *bio = SSL_get_wbio(ssl);
+                if (bio) {
+                    BIO_set_nbio_accept(bio, 1); // Позволяет OpenSSL корректно обрабатывать обрывы без сигналов
+                }
+
+                int handshake_res = SSL_accept(ssl);
+                if (handshake_res <= 0) {
+                    int ssl_err = SSL_get_error(ssl, handshake_res);
+                    std::cerr << "SSL handshake failed. OpenSSL Error code: " << ssl_err << std::endl;
+                    // Не паникуем: браузеры часто обрывают "лишние" параллельные сессии
+                } else {
+                    try {
+                        this->answerSsl(ssl, client_fd);
+                    } catch (const std::exception &e) {
+                        std::cerr << "Exception in answerSsl: " << e.what() << std::endl;
+                    } catch (...) {
+                        std::cerr << "Unknown exception in answerSsl" << std::endl;
+                    }
+                }
+
+                // ГАРАНТИРОВАННАЯ И ЕДИНСТВЕННАЯ ОЧИСТКА ДЛЯ ЛЮБОГО СЦЕНАРИЯ
+                SSL_shutdown(ssl);
+                SSL_free(ssl);
 #ifdef _WIN32
                 closesocket(client_fd);
 #endif
-                return;
-            }
+            });
 
-            SSL_set_fd(ssl, client_fd);
+            sendingThread.detach();
+        }
 
-            // ШАГ 1: Заставляем OpenSSL использовать флаг MSG_NOSIGNAL при вызовах send/recv в Linux
-            BIO *bio = SSL_get_wbio(ssl);
-            if (bio) {
-                BIO_set_nbio_accept(bio, 1); // Позволяет OpenSSL корректно обрабатывать обрывы без сигналов
-            }
-
-            int handshake_res = SSL_accept(ssl);
-            if (handshake_res <= 0) {
-                int ssl_err = SSL_get_error(ssl, handshake_res);
-                std::cerr << "SSL handshake failed. OpenSSL Error code: " << ssl_err << std::endl;
-                // Не паникуем: браузеры часто обрывают "лишние" параллельные сессии
-            } else {
-                try {
-                    this->answerSsl(ssl, client_fd);
-                } catch (const std::exception& e) {
-                    std::cerr << "Exception in answerSsl: " << e.what() << std::endl;
-                } catch (...) {
-                    std::cerr << "Unknown exception in answerSsl" << std::endl;
-                }
-            }
-
-            // ГАРАНТИРОВАННАЯ И ЕДИНСТВЕННАЯ ОЧИСТКА ДЛЯ ЛЮБОГО СЦЕНАРИЯ
-            SSL_shutdown(ssl);
-            SSL_free(ssl);
+        // Сюда код дойдет только при выходе из while(true)
 #ifdef _WIN32
-            closesocket(client_fd);
+        closesocket(server_fd);
 #endif
-        });
-
-        sendingThread.detach();
+        SSL_CTX_free(ctx);
+        return 0;
     }
-
-    // Сюда код дойдет только при выходе из while(true)
-#ifdef _WIN32
-    closesocket(server_fd);
-#endif
-    SSL_CTX_free(ctx);
-    return 0;
-}
 
 #endif
 
@@ -775,9 +775,11 @@ public:
     ~SocketListerner();
 
     void listenForConnections(int port) {
-        // startListen(port);
+        startListen(port);
+    }
+
+    void listenForHttpsConnections(int port) {
         startListenSsl(port);
-        // std::cout << "Listening for connections..." << std::endl;
     }
 };
 
