@@ -252,6 +252,22 @@ private:
 #endif
     }
 
+    bool sendAll(SSL *ssl, const std::vector<char> &data) {
+        size_t total_sent = 0;
+        while (total_sent < data.size()) {
+            int remaining = static_cast<int>(std::min(data.size() - total_sent, static_cast<size_t>(INT_MAX)));
+            int sent = SSL_write(ssl, data.data() + total_sent, remaining);
+            if (sent > 0) {
+                total_sent += sent;
+                continue;
+            }
+            int error = SSL_get_error(ssl, sent);
+            std::cerr << "SSL_write failed: " << error << std::endl;
+            return false;
+        }
+        return true;
+    }
+
     // 1. Метод обработки: ТЕПЕРЬ ОН ТАКОЙ ЖЕ ЧИСТЫЙ, КАК И ДЛЯ ОБЫЧНЫХ СОКЕТОВ
     void answerSsl(SSL *ssl, int client_fd) {
 #ifdef _WIN32
@@ -293,7 +309,9 @@ private:
 
         // Создаем HTTP ответ и отправляем его через SSL
         std::vector<char> response = createResponse(request);
-        SSL_write(ssl, response.data(), static_cast<int>(response.size()));
+        if (!sendAll(ssl, response)) {
+            std::cerr << "Failed to send response\n";
+        }
 
         // НИКАКИХ SSL_free, SSL_shutdown и close здесь больше нет!
         // Всё управление памятью передано обратно в поток.
@@ -502,16 +520,37 @@ private:
         socklen_t client_len = sizeof(client_address);
 
         while (true) {
-            int client_fd = accept(server_fd, (struct sockaddr *) &client_address, &client_len);
+            int client_fd = accept(server_fd, reinterpret_cast<sockaddr *>(&client_address), &client_len);
 #ifdef _WIN32
             if (client_fd == INVALID_SOCKET) {
-                std::cerr << "Accept failed" << std::endl;
+                std::cerr << "accept() failed: " << WSAGetLastError() << std::endl;
                 continue;
             }
 #else
             if (client_fd < 0) {
-                std::cerr << "Accept failed" << std::endl;
+                std::cerr << "accept() failed: " << errno << " (" << std::strerror(errno) << ")" << std::endl;
                 continue;
+            }
+#endif
+
+            // Таймауты именно для клиентского сокета
+            timeval tv{};
+            tv.tv_sec = 30;
+            tv.tv_usec = 0;
+
+#ifdef _WIN32
+            if (setsockopt(client_fd, SOL_SOCKET, SO_RCVTIMEO, reinterpret_cast<const char *>(&tv), sizeof(tv)) < 0) {
+                std::cerr << "setsockopt(SO_RCVTIMEO) failed\n";
+            }
+            if (setsockopt(client_fd, SOL_SOCKET, SO_SNDTIMEO, reinterpret_cast<const char *>(&tv), sizeof(tv)) < 0) {
+                std::cerr << "setsockopt(SO_SNDTIMEO) failed\n";
+            }
+#else
+            if (setsockopt(client_fd, SOL_SOCKET, SO_RCVTIMEO, &tv, sizeof(tv)) < 0) {
+                std::cerr << "setsockopt(SO_RCVTIMEO) failed\n";
+            }
+            if (setsockopt(client_fd, SOL_SOCKET, SO_SNDTIMEO, &tv, sizeof(tv)) < 0) {
+                std::cerr << "setsockopt(SO_SNDTIMEO) failed\n";
             }
 #endif
 
@@ -522,44 +561,37 @@ private:
                     std::cerr << "Failed to create SSL structure" << std::endl;
 #ifdef _WIN32
                     closesocket(client_fd);
+#else
+                    close(client_fd);
 #endif
                     return;
                 }
-
                 SSL_set_fd(ssl, client_fd);
-
-                // ШАГ 1: Заставляем OpenSSL использовать флаг MSG_NOSIGNAL при вызовах send/recv в Linux
-                BIO *bio = SSL_get_wbio(ssl);
-                if (bio) {
-                    BIO_set_nbio_accept(bio, 1); // Позволяет OpenSSL корректно обрабатывать обрывы без сигналов
-                }
-
                 int handshake_res = SSL_accept(ssl);
                 if (handshake_res <= 0) {
                     int ssl_err = SSL_get_error(ssl, handshake_res);
-                    std::cerr << "SSL handshake failed. OpenSSL Error code: " << ssl_err << std::endl;
-                    // Не паникуем: браузеры часто обрывают "лишние" параллельные сессии
+                    std::cerr << "SSL handshake failed. OpenSSL error: " << ssl_err << std::endl;
                 } else {
                     try {
                         this->answerSsl(ssl, client_fd);
                     } catch (const std::exception &e) {
-                        std::cerr << "Exception in answerSsl: " << e.what() << std::endl;
+                        std::cerr << "Exception in answerSsl: "
+                                << e.what() << std::endl;
                     } catch (...) {
-                        std::cerr << "Unknown exception in answerSsl" << std::endl;
+                        std::cerr << "Unknown exception in answerSsl"
+                                << std::endl;
                     }
                 }
-
-                // ГАРАНТИРОВАННАЯ И ЕДИНСТВЕННАЯ ОЧИСТКА ДЛЯ ЛЮБОГО СЦЕНАРИЯ
                 SSL_shutdown(ssl);
                 SSL_free(ssl);
 #ifdef _WIN32
                 closesocket(client_fd);
+#else
+                close(client_fd);
 #endif
             });
-
             sendingThread.detach();
         }
-
         // Сюда код дойдет только при выходе из while(true)
 #ifdef _WIN32
         closesocket(server_fd);
